@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Search, Settings, Sun, Moon, BookOpen, RefreshCw } from "lucide-react";
 import { poetryAPI } from "@/api/poetry";
 
@@ -32,6 +33,7 @@ export interface TopBarProps {
 }
 
 export function TopBar({ theme, onToggleTheme }: TopBarProps) {
+  const navigate = useNavigate();
   const now = useNow();
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
@@ -55,7 +57,11 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-2">
+      <button
+        onClick={() => navigate("/")}
+        className="flex items-center gap-2 transition-all hover:scale-105"
+        title="回到首页"
+      >
         <div
           className="h-7 w-7 rounded-lg"
           style={{ background: "var(--accent-gradient)" }}
@@ -63,7 +69,7 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
         <span className="text-base font-semibold tracking-tight">
           Breeze<span className="gradient-text">Center</span>
         </span>
-      </div>
+      </button>
 
       {/* 搜索框 */}
       <div className="relative ml-2 hidden flex-1 max-w-md md:block">
@@ -151,7 +157,12 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
         </button>
 
         {/* 设置 */}
-        <button className="btn-ghost" aria-label="设置" title="设置">
+        <button
+          onClick={() => navigate("/admin")}
+          className="btn-ghost"
+          aria-label="管理后台"
+          title="管理后台"
+        >
           <Settings size={16} />
         </button>
       </div>

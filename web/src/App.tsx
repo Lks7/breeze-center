@@ -4,9 +4,10 @@ import { HomePage } from "@/pages/HomePage";
 import { PlansPage } from "@/pages/PlansPage";
 import { ServicesPage } from "@/pages/ServicesPage";
 import { BlogPage } from "@/pages/BlogPage";
+import { RSSPage } from "@/pages/RSSPage";
+import { FilesPage } from "@/pages/FilesPage";
 import { BookmarksPage } from "@/pages/BookmarksPage";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
-import { BlogAdmin } from "@/pages/admin/BlogAdmin";
 import { RSSAdmin } from "@/pages/admin/RSSAdmin";
 import { ServiceAdmin } from "@/pages/admin/ServiceAdmin";
 import { BookmarkAdmin } from "@/pages/admin/BookmarkAdmin";
@@ -21,10 +22,11 @@ function App() {
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/blog" element={<BlogPage />} />
+        <Route path="/rss" element={<RSSPage />} />
+        <Route path="/files" element={<FilesPage />} />
         <Route path="/bookmarks" element={<BookmarksPage />} />
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="blog" replace />} />
-          <Route path="blog" element={<BlogAdmin />} />
+          <Route index element={<Navigate to="rss" replace />} />
           <Route path="rss" element={<RSSAdmin />} />
           <Route path="services" element={<ServiceAdmin />} />
           <Route path="bookmarks" element={<BookmarkAdmin />} />

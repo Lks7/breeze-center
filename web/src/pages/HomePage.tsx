@@ -70,7 +70,7 @@ export function HomePage() {
               enterDelay={0}
               stats={[
                 { label: "未完成待办", value: undoneTodos, to: "/plans" },
-                { label: "RSS 文章", value: rssArticleCount, to: "/admin/rss" },
+                { label: "RSS 文章", value: rssArticleCount, to: "/rss" },
                 { label: "在线服务", value: activeServices, to: "/services" },
               ]}
             />
@@ -96,7 +96,7 @@ export function HomePage() {
 
           {/* 文章动态 占 2 列 */}
           <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
-            <RssFeedWidget enterDelay={200} articles={rssArticles} to="/admin/rss" />
+            <RssFeedWidget enterDelay={200} articles={rssArticles} to="/rss" />
           </div>
 
           {/* 服务状态 */}

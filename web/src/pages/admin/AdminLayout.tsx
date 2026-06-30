@@ -1,10 +1,10 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  BookText,
   Rss,
   Server,
   Bookmark,
   CheckSquare,
+  FolderOpen,
   Home,
   Sun,
   Moon,
@@ -12,8 +12,8 @@ import {
 import { useTheme } from "@/hooks/useTheme";
 
 const NAV = [
-  { to: "/admin/blog", label: "博客", icon: BookText },
   { to: "/admin/rss", label: "RSS 订阅", icon: Rss },
+  { to: "/files", label: "文件中心", icon: FolderOpen, external: true },
   { to: "/admin/services", label: "服务", icon: Server },
   { to: "/admin/bookmarks", label: "书签", icon: Bookmark },
   { to: "/admin/todos", label: "待办", icon: CheckSquare },
@@ -21,6 +21,7 @@ const NAV = [
 
 export function AdminLayout() {
   const [theme, toggleTheme] = useTheme();
+  const navigate = useNavigate();
   return (
     <div className="flex min-h-screen">
       {/* 侧边栏 */}
@@ -31,7 +32,11 @@ export function AdminLayout() {
           borderRight: "1px solid var(--border-card)",
         }}
       >
-        <div className="flex items-center gap-2 px-5 py-4">
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2 px-5 py-4 transition-all hover:scale-105"
+          title="回到首页"
+        >
           <div
             className="h-6 w-6 rounded-lg"
             style={{ background: "var(--accent-gradient)" }}
@@ -45,11 +50,24 @@ export function AdminLayout() {
           >
             ADMIN
           </span>
-        </div>
+        </button>
 
         <nav className="flex-1 space-y-1 px-3 py-2">
           {NAV.map((item) => {
             const Icon = item.icon;
+            // 外部链接（如文件中心）不需要 NavLink，直接使用 a 标签
+            if (item.external) {
+              return (
+                <a
+                  key={item.to}
+                  href={item.to}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]"
+                >
+                  <Icon size={15} />
+                  {item.label}
+                </a>
+              );
+            }
             return (
               <NavLink
                 key={item.to}
