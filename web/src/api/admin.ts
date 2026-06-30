@@ -6,6 +6,7 @@ import { api } from "./client";
 import type {
   BlogPost,
   RSSSource,
+  RSSArticle,
   Bookmark,
   Todo,
   ServiceEntry,
@@ -32,6 +33,12 @@ export const rssAPI = {
     api.del<{ status: string }>(`/admin/rss/sources/${id}`),
   fetchNow: () =>
     api.post<{ status: string; message: string }>("/admin/rss/fetch", {}),
+  listArticles: (params?: { source_id?: string; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.source_id) query.set("source_id", params.source_id);
+    if (params?.limit) query.set("limit", params.limit.toString());
+    return api.get<RSSArticle[]>(`/admin/rss/articles?${query}`);
+  },
 };
 
 export const bookmarkAPI = collection<Bookmark>("bookmarks");

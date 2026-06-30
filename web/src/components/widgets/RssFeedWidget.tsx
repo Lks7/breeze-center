@@ -1,26 +1,23 @@
 import { Rss } from "lucide-react";
 import { WidgetCard } from "./WidgetCard";
-import type { BlogPost } from "@/types/entities";
+import type { RSSArticle } from "@/types/entities";
 import { formatRelativeTime } from "@/utils/time";
 
 /**
- * RssFeedWidget — 最新文章列表（来自本地博客 SQLite 数据）
- *
- * 之前是 mock RSS 文章流，现在改为读取 blogAPI 的真实文章。
- * 名字保留 RssFeedWidget 是因为后续接入真实 RSS 抓取后这里会混合显示。
+ * RssFeedWidget — RSS 文章流
+ * 
+ * 显示从外部 RSS 源抓取的最新文章。
  */
 export function RssFeedWidget({
   enterDelay,
-  posts = [],
+  articles = [],
   to = "/blog",
 }: {
   enterDelay?: number;
-  posts?: BlogPost[];
+  articles?: RSSArticle[];
   to?: string;
 }) {
-  const recent = posts
-    .filter((p) => p.status === "published")
-    .slice(0, 5);
+  const recent = articles.slice(0, 5);
 
   return (
     <WidgetCard
@@ -32,14 +29,16 @@ export function RssFeedWidget({
     >
       {recent.length === 0 ? (
         <p className="py-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-          暂无已发布文章
+          暂无文章，请添加 RSS 订阅源
         </p>
       ) : (
         <ul className="scroll-hidden -mx-1 max-h-[220px] space-y-1 overflow-y-auto pr-1">
-          {recent.map((post) => (
-            <li key={post.id}>
+          {recent.map((article) => (
+            <li key={article.id}>
               <a
-                href="#"
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group flex items-start gap-2 rounded-lg px-2 py-2 transition hover:bg-[var(--bg-card-hover)]"
               >
                 <span
@@ -48,17 +47,21 @@ export function RssFeedWidget({
                 />
                 <div className="min-w-0 flex-1">
                   <p
-                    className="truncate text-sm transition group-hover:text-[var(--accent-primary)]"
+                    className="line-clamp-2 text-sm transition group-hover:text-[var(--accent-primary)]"
                     style={{ color: "var(--text-primary)" }}
                   >
-                    {post.title}
+                    {article.title}
                   </p>
+                  {article.excerpt && (
+                    <p
+                      className="mt-0.5 line-clamp-1 text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {article.excerpt}
+                    </p>
+                  )}
                   <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                    {post.tags
-                      ? post.tags.split(",").slice(0, 2).join(" · ")
-                      : "未分类"}
-                    {" · "}
-                    {formatRelativeTime(post.published_at || post.created_at)}
+                    {formatRelativeTime(article.published_at || article.fetched_at)}
                   </p>
                 </div>
               </a>

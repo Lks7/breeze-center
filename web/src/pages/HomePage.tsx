@@ -10,8 +10,8 @@ import { ServiceStatusWidget } from "@/components/widgets/ServiceStatusWidget";
 import { TodoWidget } from "@/components/widgets/TodoWidget";
 import { BookmarkWidget } from "@/components/widgets/BookmarkWidget";
 import { ServiceNav } from "@/components/services/ServiceNav";
-import { todoAPI, blogAPI, serviceAPI, rssAPI, bookmarkAPI } from "@/api/admin";
-import { BookMarked, Rss, Bookmark } from "lucide-react";
+import { todoAPI, serviceAPI, rssAPI, bookmarkAPI } from "@/api/admin";
+import { Rss, Bookmark } from "lucide-react";
 
 export function HomePage() {
   const [theme, toggleTheme] = useTheme();
@@ -22,9 +22,9 @@ export function HomePage() {
     queryKey: ["home", "todos"],
     queryFn: todoAPI.list,
   });
-  const { data: posts = [] } = useQuery({
-    queryKey: ["home", "posts"],
-    queryFn: blogAPI.list,
+  const { data: rssArticles = [] } = useQuery({
+    queryKey: ["home", "rssArticles"],
+    queryFn: () => rssAPI.listArticles({ limit: 20 }),
   });
   const { data: services = [] } = useQuery({
     queryKey: ["home", "services"],
@@ -56,7 +56,7 @@ export function HomePage() {
 
   // Hero 摘要数字：全部从真实数据 derive，零硬编码
   const undoneTodos = todos.filter((t) => !t.done).length;
-  const publishedPosts = posts.filter((p) => p.status === "published").length;
+  const rssArticleCount = rssArticles.length;
   const activeServices = services.filter((s) => s.status === "active").length;
 
   return (
@@ -70,7 +70,7 @@ export function HomePage() {
               enterDelay={0}
               stats={[
                 { label: "未完成待办", value: undoneTodos, to: "/plans" },
-                { label: "已发布文章", value: publishedPosts, to: "/blog" },
+                { label: "RSS 文章", value: rssArticleCount, to: "/admin/rss" },
                 { label: "在线服务", value: activeServices, to: "/services" },
               ]}
             />
@@ -78,26 +78,25 @@ export function HomePage() {
 
           {/* 统计卡片 */}
           <StatCardWidget
-            title="博客文章"
-            icon={BookMarked}
-            value={publishedPosts}
-            unit="篇"
-            status="ok"
-            enterDelay={80}
-            to="/blog"
-          />
-          <StatCardWidget
             title="RSS 订阅"
             icon={Rss}
             value={rssSources.length}
             unit="源"
-            enterDelay={140}
+            enterDelay={80}
             to="/admin/rss"
+          />
+          <StatCardWidget
+            title="收藏书签"
+            icon={Bookmark}
+            value={bookmarks.length}
+            unit="条"
+            enterDelay={140}
+            to="/bookmarks"
           />
 
           {/* 文章动态 占 2 列 */}
           <div className="md:col-span-2 lg:col-span-2 xl:col-span-2">
-            <RssFeedWidget enterDelay={200} posts={posts} />
+            <RssFeedWidget enterDelay={200} articles={rssArticles} to="/admin/rss" />
           </div>
 
           {/* 服务状态 */}
@@ -113,16 +112,6 @@ export function HomePage() {
 
           {/* 书签 */}
           <BookmarkWidget enterDelay={380} bookmarks={bookmarks} />
-
-          {/* 书签统计 */}
-          <StatCardWidget
-            title="收藏书签"
-            icon={Bookmark}
-            value={bookmarks.length}
-            unit="条"
-            enterDelay={440}
-            to="/bookmarks"
-          />
         </div>
 
         {/* 服务导航门户区 */}
