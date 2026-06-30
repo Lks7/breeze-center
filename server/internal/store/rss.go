@@ -176,3 +176,68 @@ func (s *RSSStore) MarkArticleRead(id string, read bool) error {
 	_, err := s.db.Exec(`UPDATE rss_articles SET read=? WHERE id=?`, v, id)
 	return err
 }
+
+// ArticleInput 是插入文章的入参。
+type ArticleInput struct {
+	SourceID    string
+	Title       string
+	URL         string
+	Excerpt     string
+	PublishedAt string
+}
+
+// InsertArticles 批量插入文章，去重（UNIQUE 约束）。
+// 返回成功插入的数量。
+func (s *RSSStore) InsertArticles(articles []ArticleInput) (int, error) {
+	if len(articles) == 0 {
+		return 0, nil
+	}
+
+	inserted := 0
+	fetchedAt := now()
+
+	for _, a := range articles {
+		// 使用 INSERT OR IGNORE 跳过重复（source_id, url）
+		result, err := s.db.Exec(`INSERT OR IGNORE INTO rss_articles
+			(id, source_id, title, url, excerpt, published_at, fetched_at, read)
+			VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
+			newID(), a.SourceID, a.Title, a.URL, a.Excerpt, a.PublishedAt, fetchedAt)
+		if err != nil {
+			return inserted, err
+		}
+
+		rows, _ := result.RowsAffected()
+		inserted += int(rows)
+	}
+
+	return inserted, nil
+}
+
+// UpdateSourceFetchTime 更新订阅源的最后抓取时间。
+func (s *RSSStore) UpdateSourceFetchTime(id string, lastError string) error {
+	_, err := s.db.Exec(`UPDATE rss_sources SET last_fetched=?, updated_at=? WHERE id=?`,
+		now(), now(), id)
+	return err
+}
+
+// GetEnabledSources 返回所有启用的订阅源。
+func (s *RSSStore) GetEnabledSources() ([]RSSSource, error) {
+	rows, err := s.db.Query(`
+		SELECT id, name, url, category, icon_color, enabled, last_fetched, created_at, updated_at
+		FROM rss_sources WHERE enabled=1 AND deleted_at='' ORDER BY created_at ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []RSSSource
+	for rows.Next() {
+		var r RSSSource
+		var enabled int
+		if err := rows.Scan(&r.ID, &r.Name, &r.URL, &r.Category, &r.IconColor, &enabled, &r.LastFetched, &r.CreatedAt, &r.UpdatedAt); err != nil {
+			return nil, err
+		}
+		r.Enabled = enabled == 1
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}

@@ -30,6 +30,8 @@ export const rssAPI = {
     api.put<RSSSource>(`/admin/rss/sources/${id}`, body),
   deleteSource: (id: string) =>
     api.del<{ status: string }>(`/admin/rss/sources/${id}`),
+  fetchNow: () =>
+    api.post<{ status: string; message: string }>("/admin/rss/fetch", {}),
 };
 
 export const bookmarkAPI = collection<Bookmark>("bookmarks");

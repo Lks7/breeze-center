@@ -10,10 +10,15 @@ import (
 )
 
 // RSSHandler 处理 RSS 源与文章。
-type RSSHandler struct{ store *store.RSSStore }
+type RSSHandler struct {
+	store     *store.RSSStore
+	scheduler interface{ FetchNow() }
+}
 
 // NewRSSHandler 构造 RSSHandler。
-func NewRSSHandler(s *store.RSSStore) *RSSHandler { return &RSSHandler{store: s} }
+func NewRSSHandler(s *store.RSSStore, scheduler interface{ FetchNow() }) *RSSHandler {
+	return &RSSHandler{store: s, scheduler: scheduler}
+}
 
 // ---- Sources ----
 
@@ -92,4 +97,22 @@ func (h *RSSHandler) MarkArticleRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeData(w, http.StatusOK, map[string]bool{"read": read})
+}
+
+// FetchNow POST /api/v1/admin/rss/fetch - 手动触发 RSS 抓取
+func (h *RSSHandler) FetchNow(w http.ResponseWriter, r *http.Request) {
+	if h.scheduler == nil {
+		writeData(w, http.StatusServiceUnavailable, map[string]string{
+			"error": "RSS scheduler not available",
+		})
+		return
+	}
+
+	// 异步触发抓取
+	h.scheduler.FetchNow()
+
+	writeData(w, http.StatusOK, map[string]string{
+		"status":  "triggered",
+		"message": "RSS fetch started in background",
+	})
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/breeze/center/internal/config"
+	"github.com/breeze/center/internal/fetcher"
 	"github.com/breeze/center/internal/handler"
 	"github.com/breeze/center/internal/middleware"
 	"github.com/breeze/center/internal/service"
@@ -63,7 +64,13 @@ func main() {
 	todoStore := store.NewTodoStore(db)
 	serviceStore := store.NewServiceStore(db)
 
-	// 4. 路由
+	// 4. 启动 RSS 调度器
+	rssScheduler := fetcher.NewScheduler(rssStore, 30*time.Minute, 10*time.Second)
+	rssScheduler.Start()
+	defer rssScheduler.Stop()
+	log.Println("RSS scheduler started (interval: 30m, timeout: 10s)")
+
+	// 5. 路由
 	r := chi.NewRouter()
 	r.Use(middleware.CORS(site.Server.CORSOrigins))
 	r.Use(middleware.RequestLogger)
@@ -98,13 +105,14 @@ func main() {
 				r.Delete("/blog/posts/{id}", blogH.Delete)
 
 				// RSS
-				rssH := handler.NewRSSHandler(rssStore)
+				rssH := handler.NewRSSHandler(rssStore, rssScheduler)
 				r.Get("/rss/sources", rssH.ListSources)
 				r.Post("/rss/sources", rssH.CreateSource)
 				r.Put("/rss/sources/{id}", rssH.UpdateSource)
 				r.Delete("/rss/sources/{id}", rssH.DeleteSource)
 				r.Get("/rss/articles", rssH.ListArticles)
 				r.Patch("/rss/articles/{id}", rssH.MarkArticleRead)
+				r.Post("/rss/fetch", rssH.FetchNow) // 手动触发抓取
 
 				// 书签
 				bmH := handler.NewBookmarkHandler(bookmarkStore)
@@ -146,7 +154,7 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	// 5. 优雅启停
+	// 6. 优雅启停
 	go func() {
 		log.Printf("breeze-center API listening on http://localhost%s", addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
