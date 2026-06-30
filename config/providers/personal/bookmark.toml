@@ -1,0 +1,8 @@
+# personal/bookmark — breeze 的书签实例
+
+base_service = "bookmark"
+
+[instance]
+name = "常用书签"
+url = "https://links.breeze.dev"
+status = "active"

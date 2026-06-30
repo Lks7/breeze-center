@@ -1,0 +1,20 @@
+# github — GitHub 贡献统计
+
+id = "github"
+name = "GitHub"
+category = "data"
+description = "代码贡献统计与最近提交"
+
+[icon]
+name = "github"
+color = "#34d399"
+
+[widget]
+type = "stat-card"
+title = "GitHub 贡献"
+refresh_interval = 600
+
+[widget.display]
+metric = "commits"
+period = "week"
+show_trend = true

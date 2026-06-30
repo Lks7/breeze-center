@@ -1,0 +1,19 @@
+# bookmark — 常用书签收藏
+
+id = "bookmark"
+name = "书签"
+category = "subscription"
+description = "常用链接与工具集"
+
+[icon]
+name = "bookmark"
+color = "#60a5fa"
+
+[widget]
+type = "link-grid"
+title = "快捷书签"
+refresh_interval = 3600
+
+[widget.display]
+columns = 3
+show_favicon = true

@@ -1,0 +1,15 @@
+# personal/blog — breeze 的个人博客实例
+# 继承自 services/blog.toml，只覆写实例相关字段
+
+base_service = "blog"
+
+[instance]
+name = "Breeze 的博客"
+url = "https://blog.breeze.dev"
+rss_url = "https://blog.breeze.dev/rss.xml"
+status = "active"
+
+# 可选：覆写 widget 配置
+# [override.widget]
+# title = "我的博客动态"
+# refresh_interval = 600

@@ -1,0 +1,12 @@
+title = "Breeze Center"
+description = "个人中心聚合站点 — 一个页面看尽生活服务"
+author = "breeze"
+language = "zh-CN"
+
+[server]
+port = 8080
+env = "development"
+cors_origins = [
+    "http://localhost:4321",
+    "http://127.0.0.1:4321",
+]

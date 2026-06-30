@@ -1,0 +1,11 @@
+# personal/github — breeze 的 GitHub 实例
+
+base_service = "github"
+
+[instance]
+name = "Breeze 的 GitHub"
+url = "https://github.com/breeze"
+api_endpoint = "https://api.github.com"
+# 凭证引用环境变量名，不在此存明文
+credentials_ref = "GITHUB_TOKEN"
+status = "active"

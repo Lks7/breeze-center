@@ -1,0 +1,10 @@
+# personal/rss-reader — breeze 的 RSS 阅读器实例
+
+base_service = "rss-reader"
+
+[instance]
+name = "FreshRSS"
+url = "https://rss.breeze.dev"
+api_endpoint = "https://rss.breeze.dev/api/v1"
+credentials_ref = "FRESHRSS_TOKEN"
+status = "active"

@@ -1,0 +1,19 @@
+# service-status — 自建服务状态板
+
+id = "service-status"
+name = "服务状态"
+category = "self-hosted"
+description = "自建服务的健康状态监控"
+
+[icon]
+name = "server"
+color = "#fbbf24"
+
+[widget]
+type = "status-list"
+title = "服务状态"
+refresh_interval = 60
+
+[widget.display]
+show_latency = true
+show_url = false

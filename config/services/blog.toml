@@ -1,0 +1,27 @@
+# blog — 博客服务通用模板
+# 类型为 rss-feed，自动从 RSS 源拉取最新文章
+
+id = "blog"
+name = "博客"
+category = "content"
+description = "个人博客，记录技术思考与生活片段"
+
+[icon]
+name = "book-text"
+color = "#38bdf8"
+
+[widget]
+type = "rss-feed"
+title = "文章动态"
+refresh_interval = 300
+
+[widget.display]
+max_items = 5
+show_date = true
+show_excerpt = true
+show_source = true
+
+[health_check]
+endpoint = "/"
+method = "GET"
+timeout = 5

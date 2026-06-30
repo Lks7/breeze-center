@@ -1,0 +1,20 @@
+# build output
+bin/
+*.exe
+*.exe~
+
+# go workspace
+vendor/
+
+# env
+.env
+.env.local
+
+# editor
+.vscode/
+.idea/
+*.sw?
+
+# os
+.DS_Store
+Thumbs.db

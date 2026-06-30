@@ -1,0 +1,20 @@
+# rss-reader — RSS 聚合阅读器
+
+id = "rss-reader"
+name = "RSS 阅读器"
+category = "subscription"
+description = "聚合订阅多个信息源的最新文章"
+
+[icon]
+name = "newspaper"
+color = "#c084fc"
+
+[widget]
+type = "rss-feed"
+title = "RSS 订阅"
+refresh_interval = 600
+
+[widget.display]
+max_items = 8
+show_date = true
+show_source = true

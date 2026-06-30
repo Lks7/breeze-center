@@ -1,0 +1,19 @@
+# todo — 待办事项
+
+id = "todo"
+name = "今日待办"
+category = "plan"
+description = "个人计划与待办事项"
+
+[icon]
+name = "check-square"
+color = "#f87171"
+
+[widget]
+type = "todo-list"
+title = "今日待办"
+refresh_interval = 30
+
+[widget.display]
+show_priority = true
+group_by = "priority"
