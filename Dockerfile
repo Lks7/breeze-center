@@ -2,9 +2,9 @@
 FROM node:20-alpine AS web-builder
 WORKDIR /build
 COPY web/package.json web/pnpm-lock.yaml ./
-RUN npm install -g pnpm@9 && pnpm install --frozen-lockfile
+RUN npm install -g pnpm@9 && pnpm install --frozen-lockfile --ignore-workspace
 COPY web/ ./
-RUN pnpm build
+RUN pnpm --ignore-workspace build
 
 # === 阶段2: 构建后端 ===
 FROM golang:1.23-alpine AS server-builder
