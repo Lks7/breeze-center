@@ -86,9 +86,9 @@ export function HomePage() {
   });
 
   // Hero 摘要数字：全部从真实数据 derive，零硬编码
-  const undoneTodos = todos.filter((t) => !t.done).length;
-  const rssArticleCount = rssArticles.length;
-  const activeServices = services.filter((s) => s.status === "active").length;
+  const undoneTodos = (todos || []).filter((t) => !t.done).length;
+  const rssArticleCount = (rssArticles || []).length;
+  const activeServices = (services || []).filter((s) => s.status === "active").length;
 
   // Widget 渲染映射
   const widgetMap: Record<WidgetId, { visible: boolean; element: React.ReactElement; gridClass?: string }> = {
