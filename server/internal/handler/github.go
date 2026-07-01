@@ -26,79 +26,63 @@ func (h *GitHubHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user, err := h.client.GetUser()
 	if err != nil {
 		log.Printf("[GitHub] Failed to get user: %v", err)
-		respondJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "Failed to fetch GitHub user data",
-		})
+		respondJSON(w, http.StatusOK, &github.User{Login: "Lks7"})
 		return
 	}
-
 	respondJSON(w, http.StatusOK, user)
 }
 
 // GetRepos 获取 GitHub 仓库列表
 func (h *GitHubHandler) GetRepos(w http.ResponseWriter, r *http.Request) {
-	// 获取查询参数
 	limitStr := r.URL.Query().Get("limit")
-	limit := 30 // 默认 30 个
+	limit := 30
 	if limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
 			limit = l
 		}
 	}
-
 	repos, err := h.client.GetRepos(limit)
 	if err != nil {
 		log.Printf("[GitHub] Failed to get repos: %v", err)
-		respondJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "Failed to fetch GitHub repositories",
-		})
+		respondJSON(w, http.StatusOK, []github.Repository{})
 		return
 	}
-
 	respondJSON(w, http.StatusOK, repos)
 }
 
 // GetPopularRepos 获取最受欢迎的仓库
 func (h *GitHubHandler) GetPopularRepos(w http.ResponseWriter, r *http.Request) {
 	limitStr := r.URL.Query().Get("limit")
-	limit := 10 // 默认 10 个
+	limit := 10
 	if limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 50 {
 			limit = l
 		}
 	}
-
 	repos, err := h.client.GetPopularRepos(limit)
 	if err != nil {
 		log.Printf("[GitHub] Failed to get popular repos: %v", err)
-		respondJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "Failed to fetch popular repositories",
-		})
+		respondJSON(w, http.StatusOK, []github.Repository{})
 		return
 	}
-
 	respondJSON(w, http.StatusOK, repos)
 }
 
 // GetEvents 获取最近活动
 func (h *GitHubHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 	limitStr := r.URL.Query().Get("limit")
-	limit := 30 // 默认 30 个
+	limit := 30
 	if limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
 			limit = l
 		}
 	}
-
 	events, err := h.client.GetEvents(limit)
 	if err != nil {
 		log.Printf("[GitHub] Failed to get events: %v", err)
-		respondJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "Failed to fetch GitHub events",
-		})
+		respondJSON(w, http.StatusOK, []github.Event{})
 		return
 	}
-
 	respondJSON(w, http.StatusOK, events)
 }
 
