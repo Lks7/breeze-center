@@ -150,10 +150,13 @@ func main() {
 			r.Get("/github/popular", githubH.GetPopularRepos)
 			r.Get("/github/events", githubH.GetEvents)
 
+			// 订阅管理公开端点
+			subH := handler.NewSubscriptionHandler(subscriptionStore)
+			subH.RegisterPublic(r)
+
 			// 管理端 CRUD（动态内容存 SQLite）
 			r.Route("/admin", func(r chi.Router) {
-				// 订阅管理
-				subH := handler.NewSubscriptionHandler(subscriptionStore)
+				// 订阅管理（admin路由）
 				subH.Register(r)
 
 				// 博客

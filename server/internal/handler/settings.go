@@ -51,6 +51,6 @@ func (h *SettingsHandler) Set(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *SettingsHandler) Register(r chi.Router) {
-	r.Get("/api/v1/settings/{key}", h.Get)
-	r.Put("/api/v1/settings/{key}", h.Set)
+	r.Get("/settings/{key}", h.Get)
+	r.Put("/settings/{key}", h.Set)
 }

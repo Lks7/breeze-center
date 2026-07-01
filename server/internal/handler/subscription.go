@@ -114,9 +114,12 @@ func (h *SubscriptionHandler) GetExpiring(w http.ResponseWriter, r *http.Request
 }
 
 func (h *SubscriptionHandler) Register(r chi.Router) {
-	r.Get("/api/v1/admin/subscriptions", h.List)
-	r.Post("/api/v1/admin/subscriptions", h.Create)
-	r.Put("/api/v1/admin/subscriptions/{id}", h.Update)
-	r.Delete("/api/v1/admin/subscriptions/{id}", h.Delete)
-	r.Get("/api/v1/subscriptions/expiring", h.GetExpiring)
+	r.Get("/subscriptions", h.List)
+	r.Post("/subscriptions", h.Create)
+	r.Put("/subscriptions/{id}", h.Update)
+	r.Delete("/subscriptions/{id}", h.Delete)
+}
+
+func (h *SubscriptionHandler) RegisterPublic(r chi.Router) {
+	r.Get("/subscriptions/expiring", h.GetExpiring)
 }

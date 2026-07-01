@@ -35,6 +35,6 @@ func (h *PomodoroHandler) Increment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PomodoroHandler) Register(r chi.Router) {
-	r.Get("/api/v1/pomodoro/today", h.GetToday)
-	r.Post("/api/v1/pomodoro/increment", h.Increment)
+	r.Get("/pomodoro/today", h.GetToday)
+	r.Post("/pomodoro/increment", h.Increment)
 }

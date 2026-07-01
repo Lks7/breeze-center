@@ -61,8 +61,8 @@ func (h *NotificationHandler) Clear(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *NotificationHandler) Register(r chi.Router) {
-	r.Get("/api/v1/notifications", h.List)
-	r.Put("/api/v1/notifications/{id}/read", h.MarkRead)
-	r.Put("/api/v1/notifications/read-all", h.MarkAllRead)
-	r.Delete("/api/v1/notifications", h.Clear)
+	r.Get("/notifications", h.List)
+	r.Put("/notifications/{id}/read", h.MarkRead)
+	r.Put("/notifications/read-all", h.MarkAllRead)
+	r.Delete("/notifications", h.Clear)
 }
