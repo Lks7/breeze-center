@@ -1,5 +1,9 @@
 # === 阶段1: 构建前端 ===
 FROM node:20-alpine AS web-builder
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG http_proxy
+ARG https_proxy
 WORKDIR /build
 COPY web/package.json web/pnpm-lock.yaml ./
 RUN npm install -g pnpm@9 && pnpm install --frozen-lockfile --ignore-workspace
@@ -9,6 +13,10 @@ RUN pnpm --ignore-workspace build
 # === 阶段2: 构建后端 ===
 FROM golang:1.24-alpine AS server-builder
 ENV GOTOOLCHAIN=auto
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG http_proxy
+ARG https_proxy
 WORKDIR /build
 COPY server/go.mod server/go.sum ./
 RUN go mod download

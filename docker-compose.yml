@@ -1,6 +1,12 @@
 services:
   breeze-center:
-    build: .
+    build:
+      context: .
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - http_proxy=${http_proxy}
+        - https_proxy=${https_proxy}
     container_name: breeze-center
     restart: unless-stopped
     ports:
