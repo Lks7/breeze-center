@@ -17,6 +17,7 @@ export type WidgetId =
   | "weather"
   | "pomodoro"
   | "notification"
+  | "subscription"
   | "service-nav";
 
 /**
@@ -35,6 +36,7 @@ export interface HomeSettings {
   showWeather: boolean;
   showPomodoro: boolean;
   showNotification: boolean;
+  showSubscription: boolean;
   showServiceNav: boolean;
   widgetOrder: WidgetId[];
 }
@@ -50,6 +52,7 @@ const DEFAULT_ORDER: WidgetId[] = [
   "pomodoro",
   "bookmarks",
   "notification",
+  "subscription",
   "github",
   "fusion",
   "service-nav",
@@ -68,6 +71,7 @@ const DEFAULT_SETTINGS: HomeSettings = {
   showWeather: true,
   showPomodoro: true,
   showNotification: true,
+  showSubscription: true,
   showServiceNav: true,
   widgetOrder: DEFAULT_ORDER,
 };

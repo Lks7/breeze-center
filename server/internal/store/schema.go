@@ -140,6 +140,23 @@ CREATE TABLE IF NOT EXISTS settings (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id           TEXT PRIMARY KEY,
+    name         TEXT NOT NULL,
+    type         TEXT NOT NULL,
+    provider     TEXT NOT NULL DEFAULT '',
+    expire_date  TEXT NOT NULL,
+    price        REAL NOT NULL DEFAULT 0,
+    cycle        TEXT NOT NULL DEFAULT '',
+    status       TEXT NOT NULL DEFAULT 'active',
+    notify_days  INTEGER NOT NULL DEFAULT 7,
+    description  TEXT NOT NULL DEFAULT '',
+    created_at   TEXT NOT NULL,
+    updated_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_expire ON subscriptions(expire_date);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+
 CREATE TABLE IF NOT EXISTS schema_meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL

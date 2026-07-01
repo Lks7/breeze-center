@@ -28,6 +28,7 @@ export function HomeSettingsDialog({
     { key: "showWeather" as const, label: "天气信息" },
     { key: "showPomodoro" as const, label: "番茄钟" },
     { key: "showNotification" as const, label: "通知中心" },
+    { key: "showSubscription" as const, label: "订阅到期提醒" },
     { key: "showRssFeed" as const, label: "RSS 文章流" },
     { key: "showServices" as const, label: "服务状态" },
     { key: "showTodos" as const, label: "待办事项" },

@@ -6,6 +6,7 @@ import {
   CheckSquare,
   FolderOpen,
   Layers,
+  Clock,
   Home,
   Sun,
   Moon,
@@ -19,6 +20,7 @@ const NAV = [
   { to: "/admin/bookmarks", label: "书签", icon: Bookmark },
   { to: "/admin/todos", label: "待办", icon: CheckSquare },
   { to: "/admin/fusion", label: "融合站点", icon: Layers },
+  { to: "/admin/subscriptions", label: "订阅管理", icon: Clock },
 ];
 
 export function AdminLayout() {

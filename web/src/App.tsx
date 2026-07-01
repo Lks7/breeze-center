@@ -15,6 +15,7 @@ import { ServiceAdmin } from "@/pages/admin/ServiceAdmin";
 import { BookmarkAdmin } from "@/pages/admin/BookmarkAdmin";
 import { TodoAdmin } from "@/pages/admin/TodoAdmin";
 import { FusionAdmin } from "@/pages/admin/FusionAdmin";
+import SubscriptionAdmin from "@/pages/admin/SubscriptionAdmin";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
           <Route path="bookmarks" element={<BookmarkAdmin />} />
           <Route path="todos" element={<TodoAdmin />} />
           <Route path="fusion" element={<FusionAdmin />} />
+          <Route path="subscriptions" element={<SubscriptionAdmin />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

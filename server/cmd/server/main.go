@@ -69,6 +69,7 @@ func main() {
 	pomodoroStore := store.NewPomodoroStore(db)
 	notifStore := store.NewNotificationStore(db)
 	settingsStore := store.NewSettingsStore(db)
+	subscriptionStore := store.NewSubscriptionStore(db)
 
 	// 3.5. 启动配置热重载监听器
 	configWatcher, err := config.NewWatcher(loader, func(newSite *config.SiteConfig, newServices []config.MergedService) {
@@ -90,7 +91,18 @@ func main() {
 	defer rssScheduler.Stop()
 	log.Println("RSS scheduler started (interval: 30m, timeout: 10s)")
 
-	// 5. 启动健康检查调度器
+	// 5. 启动订阅到期检查（每天检查一次）
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		// 启动时立即检查一次
+		checkExpiringSubscriptions(subscriptionStore, notifStore)
+		for range ticker.C {
+			checkExpiringSubscriptions(subscriptionStore, notifStore)
+		}
+	}()
+
+	// 6. 启动健康检查调度器
 	healthChecker := healthcheck.NewChecker(db, 5*time.Minute) // 每 5 分钟检查一次
 	ctx := context.Background()
 	healthChecker.Start(ctx)
@@ -140,6 +152,10 @@ func main() {
 
 			// 管理端 CRUD（动态内容存 SQLite）
 			r.Route("/admin", func(r chi.Router) {
+				// 订阅管理
+				subH := handler.NewSubscriptionHandler(subscriptionStore)
+				subH.Register(r)
+
 				// 博客
 				blogH := handler.NewBlogHandler(blogStore)
 				r.Get("/blog/posts", blogH.List)
@@ -225,4 +241,27 @@ func main() {
 		log.Printf("forced shutdown: %v", err)
 	}
 	log.Println("bye")
+}
+
+func checkExpiringSubscriptions(subStore *store.SubscriptionStore, notifStore *store.NotificationStore) {
+	subs, err := subStore.GetExpiring(30)
+	if err != nil {
+		log.Printf("check expiring subscriptions: %v", err)
+		return
+	}
+	for _, sub := range subs {
+		days := int(time.Until(parseDateOrZero(sub.ExpireDate)).Hours() / 24)
+		if days < 0 {
+			notifStore.Push("subscription", "订阅已过期", 
+				fmt.Sprintf("%s 已过期", sub.Name))
+		} else if days <= sub.NotifyDays {
+			notifStore.Push("subscription", "订阅即将到期",
+				fmt.Sprintf("%s 将在 %d 天后到期", sub.Name, days))
+		}
+	}
+}
+
+func parseDateOrZero(s string) time.Time {
+	t, _ := time.Parse("2006-01-02", s[:10])
+	return t
 }
