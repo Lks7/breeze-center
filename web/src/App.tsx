@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuroraBackground } from "@/components/ui/AuroraBackground";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { HomePage } from "@/pages/HomePage";
 import { PlansPage } from "@/pages/PlansPage";
 import { ServicesPage } from "@/pages/ServicesPage";
@@ -22,7 +23,7 @@ function App() {
     <div className="min-h-screen">
       <AuroraBackground />
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<ErrorBoundary><HomePage /></ErrorBoundary>} />
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/blog" element={<BlogPage />} />

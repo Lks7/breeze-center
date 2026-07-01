@@ -66,7 +66,7 @@ export function ServiceNav({
   enterDelay?: number;
   services?: ServiceEntry[];
 }) {
-  if (services.length === 0) return null;
+  if ((services || []).length === 0) return null;
 
   // 按分类分组
   const grouped = new Map<string, ServiceEntry[]>();
@@ -87,7 +87,7 @@ export function ServiceNav({
           🧭 快捷导航
         </h2>
         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-          {services.length} 个服务
+          {(services || []).length} 个服务
         </span>
       </div>
 

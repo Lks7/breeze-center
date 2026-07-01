@@ -112,7 +112,7 @@ export function HomePage() {
         <StatCardWidget
           title="RSS 订阅"
           icon={Rss}
-          value={rssSources.length}
+          value={(rssSources || []).length}
           unit="源"
           enterDelay={80}
           to="/admin/rss"
@@ -125,7 +125,7 @@ export function HomePage() {
         <StatCardWidget
           title="收藏书签"
           icon={Bookmark}
-          value={bookmarks.length}
+          value={(bookmarks || []).length}
           unit="条"
           enterDelay={140}
           to="/bookmarks"

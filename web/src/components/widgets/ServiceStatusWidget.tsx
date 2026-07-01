@@ -22,8 +22,9 @@ export function ServiceStatusWidget({
   services?: ServiceEntry[];
   to?: string;
 }) {
-  const activeCount = services.filter((s) => s.status === "active").length;
-  const errorCount = services.filter((s) => s.status === "error").length;
+  const svcs = services || [];
+  const activeCount = svcs.filter((s) => s.status === "active").length;
+  const errorCount = svcs.filter((s) => s.status === "error").length;
 
   // 整体状态：有 error 就是 warn，否则按多数正常显示 ok
   const overall: StatusLevel = errorCount > 0 ? "warn" : "ok";
@@ -36,7 +37,7 @@ export function ServiceStatusWidget({
       enterDelay={enterDelay}
       to={to}
     >
-      {services.length === 0 ? (
+      {svcs.length === 0 ? (
         <p className="py-4 text-center text-xs" style={{ color: "var(--text-muted)" }}>
           暂无服务实例
         </p>
@@ -48,7 +49,7 @@ export function ServiceStatusWidget({
           >
             <StatusDot level={overall} size={6} />
             <span>
-              {activeCount}/{services.length} 服务运行正常
+              {activeCount}/{svcs.length} 服务运行正常
             </span>
           </div>
           <ul className="space-y-1.5">
