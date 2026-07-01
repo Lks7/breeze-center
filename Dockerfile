@@ -20,6 +20,8 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG http_proxy
 ARG https_proxy
+# 安装CGO编译所需工具
+RUN apk add --no-cache gcc musl-dev
 WORKDIR /build
 COPY server/go.mod server/go.sum ./
 RUN go mod download
