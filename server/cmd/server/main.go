@@ -117,6 +117,13 @@ func main() {
 			poetryH := handler.NewPoetryHandler()
 			r.Get("/poetry/random", poetryH.Random)
 
+			// GitHub 数据接口（公开）
+			githubH := handler.NewGitHubHandler("Lks7", "") // 用户名：Lks7，无 Token
+			r.Get("/github/user", githubH.GetUser)
+			r.Get("/github/repos", githubH.GetRepos)
+			r.Get("/github/popular", githubH.GetPopularRepos)
+			r.Get("/github/events", githubH.GetEvents)
+
 			// 管理端 CRUD（动态内容存 SQLite）
 			r.Route("/admin", func(r chi.Router) {
 				// 博客

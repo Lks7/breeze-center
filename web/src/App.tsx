@@ -6,6 +6,7 @@ import { ServicesPage } from "@/pages/ServicesPage";
 import { BlogPage } from "@/pages/BlogPage";
 import { RSSPage } from "@/pages/RSSPage";
 import { FilesPage } from "@/pages/FilesPage";
+import { GitHubPage } from "@/pages/GitHubPage";
 import { BookmarksPage } from "@/pages/BookmarksPage";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
 import { RSSAdmin } from "@/pages/admin/RSSAdmin";
@@ -24,6 +25,7 @@ function App() {
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/rss" element={<RSSPage />} />
         <Route path="/files" element={<FilesPage />} />
+        <Route path="/github" element={<GitHubPage />} />
         <Route path="/bookmarks" element={<BookmarksPage />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="rss" replace />} />

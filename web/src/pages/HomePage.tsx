@@ -9,6 +9,7 @@ import { RssFeedWidget } from "@/components/widgets/RssFeedWidget";
 import { ServiceStatusWidget } from "@/components/widgets/ServiceStatusWidget";
 import { TodoWidget } from "@/components/widgets/TodoWidget";
 import { BookmarkWidget } from "@/components/widgets/BookmarkWidget";
+import { GitHubWidget } from "@/components/widgets/GitHubWidget";
 import { ServiceNav } from "@/components/services/ServiceNav";
 import { todoAPI, serviceAPI, rssAPI, bookmarkAPI } from "@/api/admin";
 import { Rss, Bookmark } from "lucide-react";
@@ -117,6 +118,9 @@ export function HomePage() {
 
           {/* 书签 */}
           <BookmarkWidget enterDelay={380} bookmarks={bookmarks} />
+
+          {/* GitHub */}
+          <GitHubWidget enterDelay={440} />
         </div>
 
         {/* 服务导航门户区 */}
