@@ -16,14 +16,18 @@ export function RSSPage() {
   const [theme, toggleTheme] = useTheme();
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
 
-  const { data: articles = [], isLoading } = useQuery({
+  const { data: articles = [], isLoading, error: articlesError } = useQuery({
     queryKey: ["rss", "articles"],
     queryFn: () => rssAPI.listArticles({ limit: 100 }),
+    retry: 2,
+    staleTime: 30 * 1000, // 30秒内复用缓存
   });
 
-  const { data: sources = [] } = useQuery({
+  const { data: sources = [], error: sourcesError } = useQuery({
     queryKey: ["rss", "sources"],
     queryFn: rssAPI.listSources,
+    retry: 2,
+    staleTime: 5 * 60 * 1000, // 5分钟内复用缓存
   });
 
   // 创建 source ID 到 source 的映射
@@ -132,8 +136,39 @@ export function RSSPage() {
           </div>
         )}
 
+        {/* 错误状态 */}
+        {(articlesError || sourcesError) && (
+          <div className="glass-card p-12 text-center">
+            <div
+              className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+              style={{ background: "color-mix(in srgb, #ef4444 20%, transparent)" }}
+            >
+              <Rss size={32} style={{ color: "#ef4444" }} />
+            </div>
+            <h2
+              className="mb-2 text-lg font-medium"
+              style={{ color: "var(--text-primary)" }}
+            >
+              加载失败
+            </h2>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              {articlesError?.message || sourcesError?.message || "网络请求失败，请稍后重试"}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-lg px-4 py-2 text-sm font-medium transition-all hover:scale-105"
+              style={{
+                background: "var(--accent-primary)",
+                color: "var(--bg-primary)",
+              }}
+            >
+              重新加载
+            </button>
+          </div>
+        )}
+
         {/* 空状态 */}
-        {!isLoading && articles.length === 0 && (
+        {!isLoading && !articlesError && !sourcesError && articles.length === 0 && (
           <div className="glass-card p-12 text-center">
             <Rss
               size={48}
@@ -163,7 +198,7 @@ export function RSSPage() {
         )}
 
         {/* 筛选后无结果 */}
-        {!isLoading && articles.length > 0 && filteredArticles.length === 0 && (
+        {!isLoading && !articlesError && !sourcesError && articles.length > 0 && filteredArticles.length === 0 && (
           <div className="glass-card p-12 text-center">
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
               该订阅源暂无文章
@@ -172,7 +207,7 @@ export function RSSPage() {
         )}
 
         {/* 文章列表 */}
-        {!isLoading && filteredArticles.length > 0 && (
+        {!isLoading && !articlesError && !sourcesError && filteredArticles.length > 0 && (
           <div className="space-y-3">
             {filteredArticles.map((article) => {
               const source = sourceMap.get(article.source_id);

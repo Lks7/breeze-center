@@ -21,22 +21,27 @@ export function HomePage() {
   const { data: todos = [] } = useQuery({
     queryKey: ["home", "todos"],
     queryFn: todoAPI.list,
+    staleTime: 30 * 1000, // 30秒内复用缓存
   });
   const { data: rssArticles = [] } = useQuery({
     queryKey: ["home", "rssArticles"],
     queryFn: () => rssAPI.listArticles({ limit: 20 }),
+    staleTime: 30 * 1000,
   });
   const { data: services = [] } = useQuery({
     queryKey: ["home", "services"],
     queryFn: serviceAPI.list,
+    staleTime: 60 * 1000, // 服务列表变化较少，1分钟缓存
   });
   const { data: rssSources = [] } = useQuery({
     queryKey: ["home", "rssSources"],
     queryFn: rssAPI.listSources,
+    staleTime: 5 * 60 * 1000, // 5分钟缓存
   });
   const { data: bookmarks = [] } = useQuery({
     queryKey: ["home", "bookmarks"],
     queryFn: bookmarkAPI.list,
+    staleTime: 60 * 1000,
   });
 
   // TodoWidget 点击切换完成（与 /plans、/admin/todos 共享失效）

@@ -77,8 +77,8 @@ func (r *Registry) Widgets() []config.MergedService {
 	return out
 }
 
-// Reload 用新数据替换注册表内容，供配置热更新使用。
-func (r *Registry) Reload(merged []config.MergedService) {
+// ReloadFromMerged 直接使用已合并的服务列表重新加载注册表
+func (r *Registry) ReloadFromMerged(merged []config.MergedService) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.services = merged

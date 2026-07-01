@@ -25,6 +25,7 @@ import (
 	"github.com/breeze/center/internal/config"
 	"github.com/breeze/center/internal/fetcher"
 	"github.com/breeze/center/internal/handler"
+	"github.com/breeze/center/internal/healthcheck"
 	"github.com/breeze/center/internal/middleware"
 	"github.com/breeze/center/internal/service"
 	"github.com/breeze/center/internal/store"
@@ -43,6 +44,9 @@ func main() {
 	}
 	log.Printf("loaded %d service templates from %s", len(merged), *configDir)
 
+	// 构造服务注册表（初始）
+	registry := service.NewRegistry(merged)
+
 	// 2. 打开 SQLite
 	if err := os.MkdirAll(*dataDir, 0o755); err != nil {
 		log.Fatalf("create data dir: %v", err)
@@ -55,14 +59,26 @@ func main() {
 	defer db.Close()
 	log.Printf("sqlite ready at %s", dbPath)
 
-	// 3. 构造注册表与 store
-	registry := service.NewRegistry(merged)
-
+	// 3. 构造 store
 	blogStore := store.NewBlogStore(db)
 	rssStore := store.NewRSSStore(db)
 	bookmarkStore := store.NewBookmarkStore(db)
 	todoStore := store.NewTodoStore(db)
 	serviceStore := store.NewServiceStore(db)
+
+	// 3.5. 启动配置热重载监听器
+	configWatcher, err := config.NewWatcher(loader, func(newSite *config.SiteConfig, newServices []config.MergedService) {
+		// 配置变更回调：更新服务注册表
+		registry.ReloadFromMerged(newServices)
+		log.Printf("[ConfigWatcher] Registry updated: %d services", len(newServices))
+	})
+	if err != nil {
+		log.Fatalf("create config watcher: %v", err)
+	}
+	if err := configWatcher.Start(); err != nil {
+		log.Fatalf("start config watcher: %v", err)
+	}
+	defer configWatcher.Stop()
 
 	// 4. 启动 RSS 调度器
 	rssScheduler := fetcher.NewScheduler(rssStore, 30*time.Minute, 10*time.Second)
@@ -70,7 +86,14 @@ func main() {
 	defer rssScheduler.Stop()
 	log.Println("RSS scheduler started (interval: 30m, timeout: 10s)")
 
-	// 5. 路由
+	// 5. 启动健康检查调度器
+	healthChecker := healthcheck.NewChecker(db, 5*time.Minute) // 每 5 分钟检查一次
+	ctx := context.Background()
+	healthChecker.Start(ctx)
+	defer healthChecker.Stop()
+	log.Println("Health check scheduler started (interval: 5m)")
+
+	// 6. 路由
 	r := chi.NewRouter()
 	r.Use(middleware.CORS(site.Server.CORSOrigins))
 	r.Use(middleware.RequestLogger)
@@ -154,7 +177,7 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	// 6. 优雅启停
+	// 7. 优雅启停
 	go func() {
 		log.Printf("breeze-center API listening on http://localhost%s", addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

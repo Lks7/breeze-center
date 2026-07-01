@@ -147,6 +147,9 @@ export function FilesPage() {
             className="h-[calc(100vh-280px)] w-full border-0"
             title="R2 File Manager"
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads"
+            onError={(e) => {
+              console.error('Failed to load r2-web:', e);
+            }}
           />
         </div>
       </main>
