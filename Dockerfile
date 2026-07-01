@@ -7,7 +7,8 @@ COPY web/ ./
 RUN pnpm --ignore-workspace build
 
 # === 阶段2: 构建后端 ===
-FROM golang:1.23-alpine AS server-builder
+FROM golang:1.24-alpine AS server-builder
+ENV GOTOOLCHAIN=auto
 WORKDIR /build
 COPY server/go.mod server/go.sum ./
 RUN go mod download
