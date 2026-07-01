@@ -25,6 +25,9 @@ func (h *FusionHandler) List(w http.ResponseWriter, r *http.Request) {
 		handleStoreError(w, err)
 		return
 	}
+	if sites == nil {
+		sites = []store.FusionSite{}
+	}
 
 	writeData(w, http.StatusOK, sites)
 }
