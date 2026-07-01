@@ -2,6 +2,12 @@
 .git
 .gitignore
 
+# macOS
+._*
+.DS_Store
+.AppleDouble
+.LSOverride
+
 # Node
 web/node_modules
 web/dist
