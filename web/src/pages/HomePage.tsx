@@ -8,6 +8,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { Footer } from "@/components/layout/Footer";
 import { HomeSettingsDialog } from "@/components/ui/HomeSettingsDialog";
 import { DraggableWidget } from "@/components/widgets/DraggableWidget";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { HeroCard } from "@/components/widgets/HeroCard";
 import { StatCardWidget } from "@/components/widgets/StatCardWidget";
 import { RssFeedWidget } from "@/components/widgets/RssFeedWidget";
@@ -212,11 +213,13 @@ export function HomePage() {
                   const widget = widgetMap[id];
                   return (
                     <DraggableWidget key={id} id={id}>
-                      {widget.gridClass ? (
-                        <div className={widget.gridClass}>{widget.element}</div>
-                      ) : (
-                        widget.element
-                      )}
+                      <ErrorBoundary name={id}>
+                        {widget.gridClass ? (
+                          <div className={widget.gridClass}>{widget.element}</div>
+                        ) : (
+                          widget.element
+                        )}
+                      </ErrorBoundary>
                     </DraggableWidget>
                   );
                 })}

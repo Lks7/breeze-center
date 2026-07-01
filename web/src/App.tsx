@@ -23,7 +23,7 @@ function App() {
     <div className="min-h-screen">
       <AuroraBackground />
       <Routes>
-        <Route path="/" element={<ErrorBoundary><HomePage /></ErrorBoundary>} />
+        <Route path="/" element={<ErrorBoundary name="首页"><HomePage /></ErrorBoundary>} />
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/blog" element={<BlogPage />} />
