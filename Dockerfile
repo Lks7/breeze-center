@@ -4,6 +4,9 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG http_proxy
 ARG https_proxy
+ENV PNPM_HOME="/root/.local/share/pnpm"
+ENV PATH="${PNPM_HOME}:${PATH}"
+RUN npm config set registry https://registry.npmmirror.com
 WORKDIR /build
 COPY web/package.json web/pnpm-lock.yaml ./
 RUN npm install -g pnpm@9 && pnpm install --frozen-lockfile --ignore-workspace
@@ -12,7 +15,8 @@ RUN pnpm --ignore-workspace build
 
 # === 阶段2: 构建后端 ===
 FROM golang:1.24-alpine AS server-builder
-ENV GOTOOLCHAIN=auto
+ENV GOTOOLCHAIN=auto \
+    GOPROXY=https://goproxy.cn,direct
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG http_proxy
@@ -25,7 +29,9 @@ RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -o breeze-center ./cmd/se
 
 # === 阶段3: 运行时镜像 ===
 FROM alpine:3.19
-RUN apk add --no-cache ca-certificates tzdata
+# 使用阿里云镜像加速
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+RUN apk add --no-cache ca-certificates tzdata wget
 WORKDIR /app
 
 # 复制编译产物
