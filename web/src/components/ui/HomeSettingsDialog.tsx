@@ -44,7 +44,7 @@ export function HomeSettingsDialog({
       onClick={onClose}
     >
       <div
-        className="glass-card w-full max-w-md animate-scale-in"
+        className="glass-card w-full max-w-lg animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 标题栏 */}
@@ -79,7 +79,7 @@ export function HomeSettingsDialog({
             自定义首页显示的内容模块
           </p>
 
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
             {widgets.map((widget) => (
               <label
                 key={widget.key}
