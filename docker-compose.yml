@@ -10,7 +10,7 @@ services:
     container_name: breeze-center
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3125:3000"
     volumes:
       - ./data:/app/data
       - ./server/config.yaml:/app/config.yaml:ro
