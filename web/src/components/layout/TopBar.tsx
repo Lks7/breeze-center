@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Search, Settings, Sun, Moon, BookOpen, RefreshCw } from "lucide-react";
+import { Search, Settings, Sun, Moon, BookOpen, RefreshCw, Home, LayoutDashboard } from "lucide-react";
 import { poetryAPI } from "@/api/poetry";
 
 /**
@@ -36,6 +36,7 @@ export interface TopBarProps {
 export function TopBar({ theme, onToggleTheme, onSettingsClick }: TopBarProps) {
   const navigate = useNavigate();
   const now = useNow();
+  const [menuOpen, setMenuOpen] = useState(false);
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
   const ss = String(now.getSeconds()).padStart(2, "0");
@@ -157,15 +158,41 @@ export function TopBar({ theme, onToggleTheme, onSettingsClick }: TopBarProps) {
           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
-        {/* 设置 */}
-        <button
-          onClick={onSettingsClick || (() => navigate("/admin"))}
-          className="btn-ghost"
-          aria-label={onSettingsClick ? "首页设置" : "管理后台"}
-          title={onSettingsClick ? "首页设置" : "管理后台"}
-        >
-          <Settings size={16} />
-        </button>
+        {/* 设置下拉菜单 */}
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="btn-ghost"
+            aria-label="菜单"
+            title="菜单"
+          >
+            <Settings size={16} />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-full mt-2 w-40 z-20 rounded-xl border shadow-xl py-1"
+                style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}>
+                <button
+                  onClick={() => { setMenuOpen(false); onSettingsClick ? onSettingsClick() : navigate("/"); }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-all hover:opacity-80"
+                  style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}
+                >
+                  <Home size={14} style={{ color: "var(--accent-primary)" }} />
+                  首页设置
+                </button>
+                <button
+                  onClick={() => { setMenuOpen(false); navigate("/admin"); }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-all hover:opacity-80"
+                  style={{ background: "var(--bg-card)", color: "var(--text-primary)" }}
+                >
+                  <LayoutDashboard size={14} style={{ color: "var(--accent-primary)" }} />
+                  后台管理
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
