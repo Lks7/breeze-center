@@ -129,10 +129,27 @@ func (s *RSSStore) getSource(id string) (*RSSSource, error) {
 	return &r, nil
 }
 
-// DeleteSource 软删除订阅源（关联文章通过外键 CASCADE 删除）。
+// DeleteSource 软删除订阅源，同步清理关联文章。
 func (s *RSSStore) DeleteSource(id string) error {
-	_, err := s.db.Exec(`UPDATE rss_sources SET deleted_at=?, updated_at=? WHERE id=?`, now(), now(), id)
-	return err
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 软删除源
+	_, err = tx.Exec(`UPDATE rss_sources SET deleted_at=?, updated_at=? WHERE id=?`, now(), now(), id)
+	if err != nil {
+		return err
+	}
+
+	// 清理关联文章
+	_, err = tx.Exec(`DELETE FROM rss_articles WHERE source_id=?`, id)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // ListArticles 返回最新文章，可按 source_id 过滤。

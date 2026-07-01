@@ -30,9 +30,10 @@ function greeting(hour: number) {
 export interface TopBarProps {
   theme: "dark" | "light";
   onToggleTheme: () => void;
+  onSettingsClick?: () => void; // 可选：自定义设置按钮行为
 }
 
-export function TopBar({ theme, onToggleTheme }: TopBarProps) {
+export function TopBar({ theme, onToggleTheme, onSettingsClick }: TopBarProps) {
   const navigate = useNavigate();
   const now = useNow();
   const hh = String(now.getHours()).padStart(2, "0");
@@ -158,10 +159,10 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
 
         {/* 设置 */}
         <button
-          onClick={() => navigate("/admin")}
+          onClick={onSettingsClick || (() => navigate("/admin"))}
           className="btn-ghost"
-          aria-label="管理后台"
-          title="管理后台"
+          aria-label={onSettingsClick ? "首页设置" : "管理后台"}
+          title={onSettingsClick ? "首页设置" : "管理后台"}
         >
           <Settings size={16} />
         </button>

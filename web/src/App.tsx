@@ -7,12 +7,14 @@ import { BlogPage } from "@/pages/BlogPage";
 import { RSSPage } from "@/pages/RSSPage";
 import { FilesPage } from "@/pages/FilesPage";
 import { GitHubPage } from "@/pages/GitHubPage";
+import { FusionPage } from "@/pages/FusionPage";
 import { BookmarksPage } from "@/pages/BookmarksPage";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
 import { RSSAdmin } from "@/pages/admin/RSSAdmin";
 import { ServiceAdmin } from "@/pages/admin/ServiceAdmin";
 import { BookmarkAdmin } from "@/pages/admin/BookmarkAdmin";
 import { TodoAdmin } from "@/pages/admin/TodoAdmin";
+import { FusionAdmin } from "@/pages/admin/FusionAdmin";
 
 function App() {
   return (
@@ -26,6 +28,7 @@ function App() {
         <Route path="/rss" element={<RSSPage />} />
         <Route path="/files" element={<FilesPage />} />
         <Route path="/github" element={<GitHubPage />} />
+        <Route path="/fusion" element={<FusionPage />} />
         <Route path="/bookmarks" element={<BookmarksPage />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="rss" replace />} />
@@ -33,6 +36,7 @@ function App() {
           <Route path="services" element={<ServiceAdmin />} />
           <Route path="bookmarks" element={<BookmarkAdmin />} />
           <Route path="todos" element={<TodoAdmin />} />
+          <Route path="fusion" element={<FusionAdmin />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

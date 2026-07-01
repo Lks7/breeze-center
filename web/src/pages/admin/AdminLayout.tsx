@@ -5,6 +5,7 @@ import {
   Bookmark,
   CheckSquare,
   FolderOpen,
+  Layers,
   Home,
   Sun,
   Moon,
@@ -17,6 +18,7 @@ const NAV = [
   { to: "/admin/services", label: "服务", icon: Server },
   { to: "/admin/bookmarks", label: "书签", icon: Bookmark },
   { to: "/admin/todos", label: "待办", icon: CheckSquare },
+  { to: "/admin/fusion", label: "融合站点", icon: Layers },
 ];
 
 export function AdminLayout() {

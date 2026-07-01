@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, X, Loader2, CheckSquare } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { APIError } from "@/api/client";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 /**
  * AdminPageProps — 通用管理页面配置
@@ -48,6 +49,7 @@ export function AdminPage<T extends { id: string }>({
   const qc = useQueryClient();
   const [editing, setEditing] = useState<T | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
 
   const { data: items = [], isLoading, error } = useQuery({
     queryKey,
@@ -67,7 +69,10 @@ export function AdminPage<T extends { id: string }>({
 
   const deleteMutation = useMutation({
     mutationFn: deleteFn,
-    onSuccess: () => qc.invalidateQueries({ queryKey }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey });
+      setDeleteConfirm(null);
+    },
   });
 
   function openCreate() {
@@ -150,7 +155,10 @@ export function AdminPage<T extends { id: string }>({
               </button>
               <button
                 onClick={() => {
-                  if (confirm("确认删除？")) deleteMutation.mutate(item.id);
+                  const name = (item as Record<string, unknown>).name as string ??
+                    (item as Record<string, unknown>).title as string ??
+                    '此项目';
+                  setDeleteConfirm({ id: item.id, name });
                 }}
                 className="btn-ghost !p-1.5"
                 title="删除"
@@ -175,6 +183,18 @@ export function AdminPage<T extends { id: string }>({
           onClose={closeForm}
         />
       )}
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        isOpen={!!deleteConfirm}
+        title="删除确认"
+        message={`确定要删除「${deleteConfirm?.name}」吗？此操作不可恢复。`}
+        confirmText="删除"
+        cancelText="取消"
+        onConfirm={() => deleteConfirm && deleteMutation.mutate(deleteConfirm.id)}
+        onCancel={() => setDeleteConfirm(null)}
+        danger
+      />
     </div>
   );
 }

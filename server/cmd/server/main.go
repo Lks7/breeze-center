@@ -65,6 +65,10 @@ func main() {
 	bookmarkStore := store.NewBookmarkStore(db)
 	todoStore := store.NewTodoStore(db)
 	serviceStore := store.NewServiceStore(db)
+	fusionStore := store.NewFusionStore(db)
+	pomodoroStore := store.NewPomodoroStore(db)
+	notifStore := store.NewNotificationStore(db)
+	settingsStore := store.NewSettingsStore(db)
 
 	// 3.5. 启动配置热重载监听器
 	configWatcher, err := config.NewWatcher(loader, func(newSite *config.SiteConfig, newServices []config.MergedService) {
@@ -117,6 +121,16 @@ func main() {
 			poetryH := handler.NewPoetryHandler()
 			r.Get("/poetry/random", poetryH.Random)
 
+			// 番茄钟与通知（公开）
+			pomodoroH := handler.NewPomodoroHandler(pomodoroStore)
+			pomodoroH.Register(r)
+			notifH := handler.NewNotificationHandler(notifStore)
+			notifH.Register(r)
+
+			// 用户设置（公开）
+			settingsH := handler.NewSettingsHandler(settingsStore)
+			settingsH.Register(r)
+
 			// GitHub 数据接口（公开）
 			githubH := handler.NewGitHubHandler("Lks7", "") // 用户名：Lks7，无 Token
 			r.Get("/github/user", githubH.GetUser)
@@ -165,6 +179,14 @@ func main() {
 				r.Post("/services", svcAdminH.Create)
 				r.Put("/services/{id}", svcAdminH.Update)
 				r.Delete("/services/{id}", svcAdminH.Delete)
+
+				// 融合站点
+				fusionH := handler.NewFusionHandler(fusionStore)
+				r.Get("/fusion", fusionH.List)
+				r.Post("/fusion", fusionH.Create)
+				r.Get("/fusion/{id}", fusionH.Get)
+				r.Put("/fusion/{id}", fusionH.Update)
+				r.Delete("/fusion/{id}", fusionH.Delete)
 			})
 		})
 	})
