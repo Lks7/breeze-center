@@ -207,9 +207,14 @@ func main() {
 		})
 	})
 
-	// 根路径信息
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "breeze-center API v0.1.0 — %d templates, SQLite ready", len(merged))
+	// SPA 静态文件服务
+	fs := http.FileServer(http.Dir("/app/web/dist"))
+	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := os.Stat("/app/web/dist" + r.URL.Path); os.IsNotExist(err) {
+			http.ServeFile(w, r, "/app/web/dist/index.html")
+			return
+		}
+		fs.ServeHTTP(w, r)
 	})
 
 	addr := fmt.Sprintf(":%d", site.Server.Port)
