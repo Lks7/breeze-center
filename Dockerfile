@@ -28,8 +28,6 @@ RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -o breeze-center ./cmd/se
 
 # === 阶段3: 运行时镜像 ===
 FROM alpine:3.19
-# 使用阿里云镜像加速
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --no-cache ca-certificates tzdata wget
 WORKDIR /app
 
