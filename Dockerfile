@@ -14,9 +14,8 @@ COPY web/ ./
 RUN pnpm --ignore-workspace build
 
 # === 阶段2: 构建后端 ===
-FROM golang:1.24-alpine AS server-builder
-ENV GOTOOLCHAIN=auto \
-    GOPROXY=https://goproxy.cn,direct
+FROM golang:1.25-alpine AS server-builder
+ENV GOPROXY=https://goproxy.cn,direct
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG http_proxy
