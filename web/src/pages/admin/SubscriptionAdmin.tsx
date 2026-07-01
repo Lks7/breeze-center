@@ -125,38 +125,120 @@ export default function SubscriptionAdmin() {
 
       {/* 表单弹窗 */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={() => setShowForm(false)}>
-          <div className="w-full max-w-md rounded-2xl p-6 shadow-2xl" style={{ background: "var(--bg-card)" }}
+          <div className="w-full max-w-lg rounded-2xl shadow-2xl animate-scale-in" 
+            style={{ background: "var(--bg-card)" }}
             onClick={(e) => e.stopPropagation()}>
-            <h3 className="mb-4 text-lg font-bold" style={{ color: "var(--text-primary)" }}>
-              {editing ? "编辑订阅" : "添加订阅"}
-            </h3>
-            <div className="space-y-3">
-              <input placeholder="名称" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
-                {Object.keys(TYPE_COLORS).map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-              <input placeholder="提供商" value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <input type="date" value={form.expire_date} onChange={(e) => setForm({ ...form, expire_date: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <div className="flex gap-2">
-                <input type="number" placeholder="价格" value={form.price || ""} onChange={(e) => setForm({ ...form, price: +e.target.value })}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-                <select value={form.cycle} onChange={(e) => setForm({ ...form, cycle: e.target.value })}
-                  className="w-24 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
-                  <option>月付</option><option>季付</option><option>年付</option><option>永久</option>
-                </select>
+            
+            {/* 标题栏 */}
+            <div className="flex items-center justify-between border-b p-5" style={{ borderColor: "var(--border-color)" }}>
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg"
+                  style={{ background: (TYPE_COLORS[form.type] || "#6b7280") + "20" }}>
+                  <Plus size={16} style={{ color: TYPE_COLORS[form.type] || "#6b7280" }} />
+                </div>
+                <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+                  {editing ? "编辑订阅" : "新建订阅"}
+                </h3>
               </div>
-              <input placeholder="备注" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
-              <div className="flex gap-2 pt-2">
-                <button onClick={() => setShowForm(false)} className="flex-1 rounded-lg py-2 text-sm" style={{ background: "var(--bg-secondary)", color: "var(--text-muted)" }}>取消</button>
-                <button onClick={handleSave} className="flex-1 rounded-lg py-2 text-sm font-medium" style={{ background: "var(--accent-primary)", color: "#fff" }}>保存</button>
+            </div>
+
+            {/* 表单内容 */}
+            <div className="p-5 space-y-4">
+              {/* 基本信息 */}
+              <div className="space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>基本信息</div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>名称 *</label>
+                    <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="如：Netflix"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>类型</label>
+                    <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
+                      {Object.keys(TYPE_COLORS).map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>提供商</label>
+                    <input value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="如：Google"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>到期日期 *</label>
+                    <input type="date" value={form.expire_date} onChange={(e) => setForm({ ...form, expire_date: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
+                  </div>
+                </div>
               </div>
+
+              {/* 费用与提醒 */}
+              <div className="space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>费用与提醒</div>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>价格</label>
+                    <input type="number" value={form.price || ""} onChange={(e) => setForm({ ...form, price: +e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="0"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>周期</label>
+                    <select value={form.cycle} onChange={(e) => setForm({ ...form, cycle: e.target.value })}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
+                      <option>月付</option><option>季付</option><option>年付</option><option>永久</option><option>一次性</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+                    提前提醒天数
+                  </label>
+                  <select value={form.notify_days} onChange={(e) => setForm({ ...form, notify_days: +e.target.value })}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
+                    <option value={3}>3 天</option>
+                    <option value={7}>7 天</option>
+                    <option value={15}>15 天</option>
+                    <option value={30}>30 天</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>备注</label>
+                  <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    rows={2} className="w-full rounded-lg border px-3 py-2 text-sm resize-none" placeholder="备注信息..."
+                    style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }} />
+                </div>
+              </div>
+            </div>
+
+            {/* 底部按钮 */}
+            <div className="flex gap-3 border-t p-5" style={{ borderColor: "var(--border-color)" }}>
+              <button onClick={() => setShowForm(false)} 
+                className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all hover:opacity-80"
+                style={{ background: "var(--bg-secondary)", color: "var(--text-muted)" }}>
+                取消
+              </button>
+              <button onClick={handleSave}
+                className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all hover:opacity-80"
+                style={{ background: "var(--accent-primary)", color: "#fff" }}>
+                {editing ? "保存修改" : "创建订阅"}
+              </button>
             </div>
           </div>
         </div>
