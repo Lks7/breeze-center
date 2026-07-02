@@ -132,6 +132,9 @@ export interface FundNavUpdateResult {
   nav: number;
   nav_date: string;
   profit_rate: number;        // 本次抓取后的实时盈亏率
+  gsz: number;                // 盘中估算值
+  gszzl: number;              // 估算涨跌幅(%)
+  gz_time: string;            // 估算时间
   alert?: string;             // 触发预警时为 "take_profit" / "stop_loss"
   success: boolean;
   error?: string;

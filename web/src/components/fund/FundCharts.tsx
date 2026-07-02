@@ -209,8 +209,8 @@ export function ProfitBarChart({ holdings }: { holdings: FundHolding[] }) {
   const sorted = [...valid].sort((a, b) => b.profit - a.profit);
   const maxAbs = Math.max(...sorted.map((h) => Math.abs(h.profit)), 1);
 
-  const W = 320, H = 200;
-  const padLeft = 12, padRight = 12, padTop = 16, padBottom = 36;
+  const W = 380, H = 240;
+  const padLeft = 12, padRight = 12, padTop = 16, padBottom = 48;
   const chartW = W - padLeft - padRight;
   const chartH = H - padTop - padBottom;
   const zeroY = padTop + chartH / 2;
@@ -255,22 +255,15 @@ export function ProfitBarChart({ holdings }: { holdings: FundHolding[] }) {
             >
               {positive ? "+" : ""}{formatShort(h.profit)}
             </text>
-            {/* 基金名称 */}
+            {/* 基金名称 — 旋转45度避免重叠 */}
             <text
               x={labelX}
               y={H - padBottom + 14}
-              textAnchor="middle"
+              textAnchor="end"
+              transform={`rotate(-35, ${labelX}, ${H - padBottom + 14})`}
               style={{ fontSize: 9, fill: "var(--text-secondary)" }}
             >
-              {(h.name || h.code).slice(0, 5)}
-            </text>
-            <text
-              x={labelX}
-              y={H - padBottom + 24}
-              textAnchor="middle"
-              style={{ fontSize: 8, fill: "var(--text-muted)" }}
-            >
-              {h.code}
+              {(h.name || h.code).slice(0, 8)}
             </text>
           </g>
         );
@@ -290,10 +283,10 @@ export function RateBarChart({ holdings }: { holdings: FundHolding[] }) {
   const sorted = [...valid].sort((a, b) => b.profit_rate - a.profit_rate);
   const maxAbs = Math.max(...sorted.map((h) => Math.abs(h.profit_rate)), 0.01);
 
-  const rowH = 26;
-  const labelW = 90;
-  const valueW = 60;
-  const W = 360;
+  const rowH = 28;
+  const labelW = 100;
+  const valueW = 64;
+  const W = 400;
   const chartW = W - labelW - valueW;
   const H = sorted.length * rowH + 8;
   const midX = labelW + chartW / 2;

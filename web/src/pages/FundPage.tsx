@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -14,11 +14,12 @@ import {
   Percent,
   Activity,
   Bell,
+  RefreshCw,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientText } from "@/components/ui/GradientText";
 import { fundAPI } from "@/api/admin";
-import type { FundHolding, FundSummary } from "@/types/entities";
+import type { FundHolding, FundSummary, FundNavUpdateResult } from "@/types/entities";
 import {
   InvestmentLineChart,
   ProfitBarChart,
@@ -51,6 +52,17 @@ export function FundPage() {
     queryKey: ["fund", "history", "all"],
     queryFn: () => fundAPI.getAllHistory(1000),
     staleTime: 60 * 1000,
+  });
+
+  const queryClient = useQueryClient();
+  const [dailyResults, setDailyResults] = useState<FundNavUpdateResult[] | null>(null);
+
+  const dailyRefreshMutation = useMutation({
+    mutationFn: fundAPI.updateNavs,
+    onSuccess: (resp) => {
+      setDailyResults(resp.results ?? []);
+      queryClient.invalidateQueries({ queryKey: ["fund"] });
+    },
   });
 
   const validCount = holdings.filter((h) => h.current_nav > 0 && h.shares > 0).length;
@@ -86,6 +98,86 @@ export function FundPage() {
 
         {/* 1. 总盈亏统计卡片 */}
         <SummaryGrid summary={summary} count={holdings.length} validCount={validCount} />
+
+        {/* 1.5 当日盈亏 */}
+        {holdings.length > 0 && (
+          <GlassCard interactive={false} className="!p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Activity size={16} style={{ color: "var(--accent-primary)" }} />
+                <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                  当日盈亏
+                </span>
+                {dailyResults && (
+                  <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                    （估算时间：{dailyResults[0]?.gz_time || "--"}）
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => dailyRefreshMutation.mutate()}
+                disabled={dailyRefreshMutation.isPending}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                style={{ background: "var(--accent-gradient)" }}
+              >
+                {dailyRefreshMutation.isPending ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={12} />
+                )}
+                刷新当日盈亏
+              </button>
+            </div>
+            {dailyResults === null ? (
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                点击「刷新当日盈亏」获取盘中实时数据
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {dailyResults
+                  .filter((r) => r.success)
+                  .map((r) => {
+                    const holding = holdings.find((h) => h.code === r.code);
+                    const shares = holding?.shares ?? 0;
+                    const dailyProfit = r.gsz > 0 && r.nav > 0 ? shares * (r.gsz - r.nav) : 0;
+                    const positive = r.gszzl > 0;
+                    const color = r.gszzl > 0 ? "#dc2626" : r.gszzl < 0 ? "#16a34a" : "var(--text-muted)";
+                    return (
+                      <div
+                        key={r.code}
+                        className="rounded-lg px-3 py-2 text-xs flex flex-col gap-1"
+                        style={{ background: "var(--bg-secondary)", minWidth: 140 }}
+                      >
+                        <span className="font-medium" style={{ color: "var(--text-primary)" }}>
+                          {r.name || r.code}
+                        </span>
+                        <span style={{ color }}>
+                          涨幅 {positive ? "+" : ""}{r.gszzl.toFixed(2)}%
+                        </span>
+                        <span style={{ color }}>
+                          日盈亏 {dailyProfit > 0 ? "+" : ""}{dailyProfit.toFixed(2)}元
+                        </span>
+                        <span style={{ color: "var(--text-muted)" }}>
+                          估算净值 {r.gsz > 0 ? r.gsz.toFixed(4) : "--"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                {dailyResults.filter((r) => !r.success).map((r) => (
+                  <div
+                    key={r.code}
+                    className="rounded-lg px-3 py-2 text-xs"
+                    style={{ background: "var(--bg-secondary)" }}
+                  >
+                    <span style={{ color: "var(--text-muted)" }}>
+                      {r.code}: {r.error || "获取失败"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </GlassCard>
+        )}
 
         {/* 2. 统计图表 */}
         {isLoading ? (

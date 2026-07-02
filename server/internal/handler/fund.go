@@ -240,6 +240,9 @@ func (h *FundHandler) UpdateNavs(w http.ResponseWriter, r *http.Request) {
 		Nav         float64 `json:"nav"`
 		NavDate     string  `json:"nav_date"`
 		ProfitRate  float64 `json:"profit_rate"`
+		Gsz         float64 `json:"gsz"`         // 盘中估算值
+		Gszzl       float64 `json:"gszzl"`       // 估算涨跌幅(%)
+		GzTime      string  `json:"gz_time"`     // 估算时间
 		Alert       string  `json:"alert,omitempty"` // 触发预警时填 "take_profit" / "stop_loss"
 		Success     bool    `json:"success"`
 		Error       string  `json:"error,omitempty"`
@@ -283,6 +286,7 @@ func (h *FundHandler) UpdateNavs(w http.ResponseWriter, r *http.Request) {
 		results = append(results, updateResult{
 			Code: ho.Code, Name: info.Name, Nav: info.Nav,
 			NavDate: info.NavDate, ProfitRate: profitRate,
+			Gsz: info.Gsz, Gszzl: info.Gszzl, GzTime: info.GzTime,
 			Alert: alert, Success: true,
 		})
 		updated++
