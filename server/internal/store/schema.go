@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"strings"
 )
 
 // migrate 在启动时创建所有表（IF NOT EXISTS，可重复执行）。
@@ -157,6 +158,36 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 CREATE INDEX IF NOT EXISTS idx_subscriptions_expire ON subscriptions(expire_date);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
 
+CREATE TABLE IF NOT EXISTS fund_holdings (
+    id                  TEXT PRIMARY KEY,
+    code                TEXT NOT NULL,
+    name                TEXT NOT NULL DEFAULT '',
+    buy_amount          REAL NOT NULL,
+    buy_nav             REAL NOT NULL,
+    buy_date            TEXT NOT NULL,
+    current_nav         REAL,
+    shares              REAL,
+    last_updated        TEXT NOT NULL DEFAULT '',
+    target_profit_rate  REAL NOT NULL DEFAULT 0,
+    stop_loss_rate      REAL NOT NULL DEFAULT 0,
+    alert_triggered     INTEGER NOT NULL DEFAULT 0,
+    created_at          TEXT NOT NULL,
+    updated_at          TEXT NOT NULL,
+    deleted_at          TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_fund_holdings_code ON fund_holdings(code);
+
+CREATE TABLE IF NOT EXISTS fund_nav_history (
+    id           TEXT PRIMARY KEY,
+    holding_id   TEXT NOT NULL,
+    code         TEXT NOT NULL,
+    nav          REAL NOT NULL,
+    recorded_at  TEXT NOT NULL,
+    created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_fund_nav_history_holding ON fund_nav_history(holding_id, recorded_at);
+CREATE INDEX IF NOT EXISTS idx_fund_nav_history_code ON fund_nav_history(code, recorded_at);
+
 CREATE TABLE IF NOT EXISTS schema_meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -165,6 +196,23 @@ INSERT OR IGNORE INTO schema_meta (key, value) VALUES ('version', '1');
 `
 
 func migrate(db *sql.DB) error {
-	_, err := db.Exec(schemaSQL)
-	return err
+	if _, err := db.Exec(schemaSQL); err != nil {
+		return err
+	}
+	// 增量迁移：为已存在的 fund_holdings 表补列（CREATE TABLE IF NOT EXISTS 不会改已有表结构）
+	_, err := db.Exec(`
+ALTER TABLE fund_holdings ADD COLUMN target_profit_rate REAL NOT NULL DEFAULT 0;
+ALTER TABLE fund_holdings ADD COLUMN stop_loss_rate REAL NOT NULL DEFAULT 0;
+ALTER TABLE fund_holdings ADD COLUMN alert_triggered INTEGER NOT NULL DEFAULT 0;
+`)
+	// ALTER TABLE ADD COLUMN 在列已存在时会报错，忽略这个特定错误
+	if err != nil && !isDuplicateColumnErr(err) {
+		return err
+	}
+	return nil
+}
+
+// isDuplicateColumnErr 判断是否为 "duplicate column name" 错误（列已存在）。
+func isDuplicateColumnErr(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "duplicate column name")
 }

@@ -10,11 +10,13 @@ import {
   Home,
   Sun,
   Moon,
+  TrendingUp,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 
 const NAV = [
   { to: "/admin/rss", label: "RSS 订阅", icon: Rss },
+  { to: "/admin/fund", label: "基金持仓", icon: TrendingUp },
   { to: "/files", label: "文件中心", icon: FolderOpen, external: true },
   { to: "/admin/services", label: "服务", icon: Server },
   { to: "/admin/bookmarks", label: "书签", icon: Bookmark },

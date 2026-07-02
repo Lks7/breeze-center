@@ -26,6 +26,7 @@ export function HomeSettingsDialog({
     { key: "showRssStats" as const, label: "RSS 订阅统计" },
     { key: "showBookmarkStats" as const, label: "书签统计" },
     { key: "showWeather" as const, label: "天气信息" },
+    { key: "showFund" as const, label: "基金盈亏" },
     { key: "showPomodoro" as const, label: "番茄钟" },
     { key: "showNotification" as const, label: "通知中心" },
     { key: "showSubscription" as const, label: "订阅到期提醒" },

@@ -21,6 +21,7 @@ import { WeatherWidget } from "@/components/widgets/WeatherWidget";
 import { PomodoroWidget } from "@/components/widgets/PomodoroWidget";
 import { NotificationWidget } from "@/components/widgets/NotificationWidget";
 import { SubscriptionWidget } from "@/components/widgets/SubscriptionWidget";
+import { FundWidget } from "@/components/widgets/FundWidget";
 import { ServiceNav } from "@/components/services/ServiceNav";
 import { todoAPI, serviceAPI, rssAPI, bookmarkAPI } from "@/api/admin";
 import { Rss, Bookmark } from "lucide-react";
@@ -180,6 +181,10 @@ export function HomePage() {
     "subscription": {
       visible: settings.showSubscription,
       element: <SubscriptionWidget enterDelay={720} />,
+    },
+    "fund": {
+      visible: settings.showFund,
+      element: <FundWidget enterDelay={760} />,
     },
     "service-nav": {
       visible: settings.showServiceNav,

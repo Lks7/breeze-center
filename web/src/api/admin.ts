@@ -10,6 +10,12 @@ import type {
   Bookmark,
   Todo,
   ServiceEntry,
+  FundHolding,
+  FundHoldingInput,
+  FundSummary,
+  FundNavUpdateResponse,
+  FundNavHistory,
+  FundHistoryItem,
 } from "@/types/entities";
 
 const collection = <T>(path: string) => ({
@@ -48,3 +54,22 @@ export const todoAPI = {
     api.patch<Todo>(`/admin/todos/${id}/toggle`),
 };
 export const serviceAPI = collection<ServiceEntry>("services");
+
+export const fundAPI = {
+  listHoldings: () => api.get<FundHolding[]>("/admin/fund/holdings"),
+  createHolding: (body: FundHoldingInput) =>
+    api.post<FundHolding>("/admin/fund/holdings", body),
+  updateHolding: (id: string, body: FundHoldingInput) =>
+    api.put<FundHolding>(`/admin/fund/holdings/${id}`, body),
+  deleteHolding: (id: string) =>
+    api.del<{ deleted: boolean }>(`/admin/fund/holdings/${id}`),
+  updateNavs: () =>
+    api.post<FundNavUpdateResponse>("/admin/fund/update-navs", {}),
+  updateOneNav: (id: string) =>
+    api.post<FundHolding>(`/admin/fund/holdings/${id}/update-nav`, {}),
+  getSummary: () => api.get<FundSummary>("/admin/fund/summary"),
+  getHoldingHistory: (id: string, limit = 365) =>
+    api.get<FundNavHistory[]>(`/admin/fund/holdings/${id}/history?limit=${limit}`),
+  getAllHistory: (limit = 1000) =>
+    api.get<FundHistoryItem[]>(`/admin/fund/history?limit=${limit}`),
+};

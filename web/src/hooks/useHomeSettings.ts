@@ -18,6 +18,7 @@ export type WidgetId =
   | "pomodoro"
   | "notification"
   | "subscription"
+  | "fund"
   | "service-nav";
 
 /**
@@ -37,6 +38,7 @@ export interface HomeSettings {
   showPomodoro: boolean;
   showNotification: boolean;
   showSubscription: boolean;
+  showFund: boolean;
   showServiceNav: boolean;
   widgetOrder: WidgetId[];
 }
@@ -46,6 +48,7 @@ const DEFAULT_ORDER: WidgetId[] = [
   "rss-stats",
   "bookmark-stats",
   "weather",
+  "fund",
   "rss-feed",
   "services",
   "todos",
@@ -72,6 +75,7 @@ const DEFAULT_SETTINGS: HomeSettings = {
   showPomodoro: true,
   showNotification: true,
   showSubscription: true,
+  showFund: true,
   showServiceNav: true,
   widgetOrder: DEFAULT_ORDER,
 };

@@ -70,6 +70,7 @@ func main() {
 	notifStore := store.NewNotificationStore(db)
 	settingsStore := store.NewSettingsStore(db)
 	subscriptionStore := store.NewSubscriptionStore(db)
+	fundStore := store.NewFundStore(db)
 
 	// 3.5. 启动配置热重载监听器
 	configWatcher, err := config.NewWatcher(loader, func(newSite *config.SiteConfig, newServices []config.MergedService) {
@@ -90,6 +91,11 @@ func main() {
 	rssScheduler.Start()
 	defer rssScheduler.Stop()
 	log.Println("RSS scheduler started (interval: 30m, timeout: 10s)")
+
+	// 4.5. 启动基金净值定时抓取调度器（交易日 15:30 自动抓取 + 预警检查）
+	fundScheduler := fetcher.NewFundScheduler(fundStore, notifStore)
+	fundScheduler.Start()
+	defer fundScheduler.Stop()
 
 	// 5. 启动订阅到期检查（每天检查一次）
 	go func() {
@@ -176,6 +182,19 @@ func main() {
 				r.Get("/rss/articles", rssH.ListArticles)
 				r.Patch("/rss/articles/{id}", rssH.MarkArticleRead)
 				r.Post("/rss/fetch", rssH.FetchNow) // 手动触发抓取
+
+			// 基金持仓
+			// v1.2: notifStore 用于止盈止损预警推送
+			fundH := handler.NewFundHandler(fundStore, notifStore)
+			r.Get("/fund/holdings", fundH.ListHoldings)
+			r.Post("/fund/holdings", fundH.CreateHolding)
+			r.Put("/fund/holdings/{id}", fundH.UpdateHolding)
+			r.Delete("/fund/holdings/{id}", fundH.DeleteHolding)
+			r.Post("/fund/update-navs", fundH.UpdateNavs)                       // 批量更新净值（写历史+预警）
+			r.Post("/fund/holdings/{id}/update-nav", fundH.UpdateOneNav)        // 单条更新净值
+			r.Get("/fund/holdings/{id}/history", fundH.GetHoldingHistory)       // 单只净值历史
+			r.Get("/fund/history", fundH.GetAllHistory)                         // 全部净值历史汇总
+			r.Get("/fund/summary", fundH.GetSummary)                            // 总盈亏统计
 
 				// 书签
 				bmH := handler.NewBookmarkHandler(bookmarkStore)

@@ -10,8 +10,10 @@ import { FilesPage } from "@/pages/FilesPage";
 import { GitHubPage } from "@/pages/GitHubPage";
 import { FusionPage } from "@/pages/FusionPage";
 import { BookmarksPage } from "@/pages/BookmarksPage";
+import { FundPage } from "@/pages/FundPage";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
 import { RSSAdmin } from "@/pages/admin/RSSAdmin";
+import { FundAdmin } from "@/pages/admin/FundAdmin";
 import { ServiceAdmin } from "@/pages/admin/ServiceAdmin";
 import { BookmarkAdmin } from "@/pages/admin/BookmarkAdmin";
 import { TodoAdmin } from "@/pages/admin/TodoAdmin";
@@ -32,9 +34,11 @@ function App() {
         <Route path="/github" element={<GitHubPage />} />
         <Route path="/fusion" element={<FusionPage />} />
         <Route path="/bookmarks" element={<BookmarksPage />} />
+        <Route path="/fund" element={<ErrorBoundary name="基金盈亏"><FundPage /></ErrorBoundary>} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="rss" replace />} />
           <Route path="rss" element={<RSSAdmin />} />
+          <Route path="fund" element={<FundAdmin />} />
           <Route path="services" element={<ServiceAdmin />} />
           <Route path="bookmarks" element={<BookmarkAdmin />} />
           <Route path="todos" element={<TodoAdmin />} />
