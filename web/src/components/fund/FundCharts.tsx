@@ -255,15 +255,15 @@ export function ProfitBarChart({ holdings }: { holdings: FundHolding[] }) {
             >
               {positive ? "+" : ""}{formatShort(h.profit)}
             </text>
-            {/* 基金名称 — 旋转45度避免重叠 */}
+            {/* 基金名称 — 旋转45度避免重叠，textAnchor="start"确保向下延伸 */}
             <text
-              x={labelX}
-              y={H - padBottom + 14}
-              textAnchor="end"
-              transform={`rotate(-35, ${labelX}, ${H - padBottom + 14})`}
+              x={x}
+              y={H - padBottom + 4}
+              textAnchor="start"
+              transform={`rotate(-35, ${x}, ${H - padBottom + 4})`}
               style={{ fontSize: 9, fill: "var(--text-secondary)" }}
             >
-              {(h.name || h.code).slice(0, 8)}
+              {(h.name || h.code).slice(0, 7)}
             </text>
           </g>
         );
@@ -284,9 +284,9 @@ export function RateBarChart({ holdings }: { holdings: FundHolding[] }) {
   const maxAbs = Math.max(...sorted.map((h) => Math.abs(h.profit_rate)), 0.01);
 
   const rowH = 28;
-  const labelW = 100;
+  const labelW = 112;
   const valueW = 64;
-  const W = 400;
+  const W = 420;
   const chartW = W - labelW - valueW;
   const H = sorted.length * rowH + 8;
   const midX = labelW + chartW / 2;
@@ -324,7 +324,7 @@ export function RateBarChart({ holdings }: { holdings: FundHolding[] }) {
               textAnchor="end"
               style={{ fontSize: 10, fill: "var(--text-secondary)" }}
             >
-              {(h.name || h.code).slice(0, 8)}
+              {truncate(h.name || h.code, 9)}
             </text>
             {/* 条形 */}
             <rect
@@ -657,6 +657,11 @@ function formatShort(n: number): string {
   const abs = Math.abs(n);
   if (abs >= 10000) return (n / 10000).toFixed(1) + "万";
   return n.toFixed(0);
+}
+
+function truncate(s: string, maxLen: number): string {
+  if (s.length <= maxLen) return s;
+  return s.slice(0, maxLen) + "…";
 }
 
 // niceCeil 把数值向上取整到"漂亮"的刻度（5000 / 10000 / 50000 的整数倍）。

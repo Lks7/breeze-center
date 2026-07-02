@@ -145,10 +145,10 @@ export function FundPage() {
                     return (
                       <div
                         key={r.code}
-                        className="rounded-lg px-3 py-2 text-xs flex flex-col gap-1"
-                        style={{ background: "var(--bg-secondary)", minWidth: 140 }}
+                        className="rounded-lg px-3 py-2.5 text-xs flex flex-col gap-1"
+                        style={{ background: "var(--bg-secondary)", width: 170 }}
                       >
-                        <span className="font-medium" style={{ color: "var(--text-primary)" }}>
+                        <span className="font-medium truncate" style={{ color: "var(--text-primary)" }}>
                           {r.name || r.code}
                         </span>
                         <span style={{ color }}>
@@ -158,7 +158,7 @@ export function FundPage() {
                           日盈亏 {dailyProfit > 0 ? "+" : ""}{dailyProfit.toFixed(2)}元
                         </span>
                         <span style={{ color: "var(--text-muted)" }}>
-                          估算净值 {r.gsz > 0 ? r.gsz.toFixed(4) : "--"}
+                          昨收 {r.nav.toFixed(4)} → 估 {r.gsz > 0 ? r.gsz.toFixed(4) : "--"}
                         </span>
                       </div>
                     );
