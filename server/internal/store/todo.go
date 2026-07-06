@@ -8,16 +8,19 @@ import (
 // Todo
 // ============================================================
 
-// Todo 是一条待办事项。
+// Todo 是一条待办事项（可升级为习惯目标）。
 type Todo struct {
-	ID        string `json:"id"`
-	Text      string `json:"text"`
-	Done      bool   `json:"done"`
-	Priority  string `json:"priority"` // high | medium | low
-	DueDate   string `json:"due_date"`
-	SortOrder int    `json:"sort_order"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID             string `json:"id"`
+	Text           string `json:"text"`
+	Done           bool   `json:"done"`
+	Priority       string `json:"priority"` // high | medium | low
+	DueDate        string `json:"due_date"`
+	SortOrder      int    `json:"sort_order"`
+	IsHabit        bool   `json:"is_habit"`
+	HabitFrequency string `json:"habit_frequency"` // daily | weekly | monthly
+	HabitTarget    int    `json:"habit_target"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
 }
 
 // TodoStore 管理待办。
@@ -29,7 +32,9 @@ func NewTodoStore(db *sql.DB) *TodoStore { return &TodoStore{db: db} }
 // List 返回所有未删除待办，按 done, sort_order, created_at 排序。
 func (s *TodoStore) List() ([]Todo, error) {
 	rows, err := s.db.Query(`
-		SELECT id, text, done, priority, due_date, sort_order, created_at, updated_at
+		SELECT id, text, done, priority, due_date, sort_order,
+		       is_habit, habit_frequency, habit_target,
+		       created_at, updated_at
 		FROM todos WHERE deleted_at='' ORDER BY done ASC, sort_order ASC, created_at DESC`)
 	if err != nil {
 		return nil, err
@@ -38,11 +43,42 @@ func (s *TodoStore) List() ([]Todo, error) {
 	var out []Todo
 	for rows.Next() {
 		var t Todo
-		var done int
-		if err := rows.Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt); err != nil {
+		var done, isHabit int
+		if err := rows.Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder,
+			&isHabit, &t.HabitFrequency, &t.HabitTarget,
+			&t.CreatedAt, &t.UpdatedAt); err != nil {
 			return nil, err
 		}
 		t.Done = done == 1
+		t.IsHabit = isHabit == 1
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// ListHabits 返回所有习惯目标（is_habit=1 且未删除）。
+func (s *TodoStore) ListHabits() ([]Todo, error) {
+	rows, err := s.db.Query(`
+		SELECT id, text, done, priority, due_date, sort_order,
+		       is_habit, habit_frequency, habit_target,
+		       created_at, updated_at
+		FROM todos WHERE deleted_at='' AND is_habit=1
+		ORDER BY sort_order ASC, created_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Todo
+	for rows.Next() {
+		var t Todo
+		var done, isHabit int
+		if err := rows.Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder,
+			&isHabit, &t.HabitFrequency, &t.HabitTarget,
+			&t.CreatedAt, &t.UpdatedAt); err != nil {
+			return nil, err
+		}
+		t.Done = done == 1
+		t.IsHabit = isHabit == 1
 		out = append(out, t)
 	}
 	return out, rows.Err()
@@ -50,11 +86,14 @@ func (s *TodoStore) List() ([]Todo, error) {
 
 // TodoInput 是创建/更新的入参。
 type TodoInput struct {
-	Text      string `json:"text"`
-	Done      *bool  `json:"done"`
-	Priority  string `json:"priority"`
-	DueDate   string `json:"due_date"`
-	SortOrder int    `json:"sort_order"`
+	Text           string `json:"text"`
+	Done           *bool  `json:"done"`
+	Priority       string `json:"priority"`
+	DueDate        string `json:"due_date"`
+	SortOrder      int    `json:"sort_order"`
+	IsHabit        *bool  `json:"is_habit"`
+	HabitFrequency string `json:"habit_frequency"`
+	HabitTarget    int    `json:"habit_target"`
 }
 
 // Create 新建待办。
@@ -67,15 +106,26 @@ func (s *TodoStore) Create(in TodoInput) (*Todo, error) {
 	if in.Done != nil && *in.Done {
 		done = 1
 	}
+	isHabit := 0
+	if in.IsHabit != nil && *in.IsHabit {
+		isHabit = 1
+	}
+	freq := in.HabitFrequency
+	target := in.HabitTarget
 	t := &Todo{
 		ID: newID(), Text: in.Text, Done: done == 1, Priority: in.Priority,
 		DueDate: in.DueDate, SortOrder: in.SortOrder,
+		IsHabit: isHabit == 1, HabitFrequency: freq, HabitTarget: target,
 		CreatedAt: now, UpdatedAt: now,
 	}
 	_, err := s.db.Exec(`INSERT INTO todos
-		(id, text, done, priority, due_date, sort_order, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		t.ID, t.Text, done, t.Priority, t.DueDate, t.SortOrder, now, now)
+		(id, text, done, priority, due_date, sort_order,
+		 is_habit, habit_frequency, habit_target,
+		 created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		t.ID, t.Text, done, t.Priority, t.DueDate, t.SortOrder,
+		isHabit, freq, target,
+		now, now)
 	if err != nil {
 		return nil, err
 	}
@@ -91,10 +141,18 @@ func (s *TodoStore) Update(id string, in TodoInput) (*Todo, error) {
 	if in.Done != nil && *in.Done {
 		done = 1
 	}
+	isHabit := 0
+	if in.IsHabit != nil && *in.IsHabit {
+		isHabit = 1
+	}
 	_, err := s.db.Exec(`UPDATE todos SET
-		text=?, done=?, priority=?, due_date=?, sort_order=?, updated_at=?
+		text=?, done=?, priority=?, due_date=?, sort_order=?,
+		is_habit=?, habit_frequency=?, habit_target=?,
+		updated_at=?
 		WHERE id=? AND deleted_at=''`,
-		in.Text, done, in.Priority, in.DueDate, in.SortOrder, now(), id)
+		in.Text, done, in.Priority, in.DueDate, in.SortOrder,
+		isHabit, in.HabitFrequency, in.HabitTarget,
+		now(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -103,10 +161,14 @@ func (s *TodoStore) Update(id string, in TodoInput) (*Todo, error) {
 
 func (s *TodoStore) get(id string) (*Todo, error) {
 	var t Todo
-	var done int
-	err := s.db.QueryRow(`SELECT id, text, done, priority, due_date, sort_order, created_at, updated_at
+	var done, isHabit int
+	err := s.db.QueryRow(`SELECT id, text, done, priority, due_date, sort_order,
+		is_habit, habit_frequency, habit_target,
+		created_at, updated_at
 		FROM todos WHERE id=? AND deleted_at=''`, id).
-		Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt)
+		Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder,
+			&isHabit, &t.HabitFrequency, &t.HabitTarget,
+			&t.CreatedAt, &t.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
@@ -114,7 +176,13 @@ func (s *TodoStore) get(id string) (*Todo, error) {
 		return nil, err
 	}
 	t.Done = done == 1
+	t.IsHabit = isHabit == 1
 	return &t, nil
+}
+
+// GetByID 根据 ID 获取一条待办。
+func (s *TodoStore) GetByID(id string) (*Todo, error) {
+	return s.get(id)
 }
 
 // ToggleDone 快速切换完成状态。

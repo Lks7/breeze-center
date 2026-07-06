@@ -10,6 +10,7 @@ import {
   Loader2,
   Calendar,
   Flag,
+  Repeat,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientText } from "@/components/ui/GradientText";
@@ -43,6 +44,8 @@ export function PlansPage() {
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
+  const [isHabit, setIsHabit] = useState(false);
+  const [habitFrequency, setHabitFrequency] = useState<string>("daily");
 
   const { data: todos = [], isLoading } = useQuery({
     queryKey: ["plans", "todos"],
@@ -51,7 +54,13 @@ export function PlansPage() {
 
   const createMut = useMutation({
     mutationFn: () =>
-      todoAPI.create({ text, priority } as Partial<Todo>),
+      todoAPI.create({
+        text,
+        priority,
+        is_habit: isHabit,
+        habit_frequency: isHabit ? habitFrequency : "",
+        habit_target: 0,
+      } as Partial<Todo>),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["plans", "todos"] });
       qc.invalidateQueries({ queryKey: ["admin", "todos"] });
@@ -101,6 +110,14 @@ export function PlansPage() {
         <h1 className="text-2xl font-semibold">
           <GradientText>计划管理</GradientText>
         </h1>
+        <Link
+          to="/check-in"
+          className="btn-ghost ml-auto text-sm"
+          style={{ border: "1px solid var(--border-card)" }}
+        >
+          <Repeat size={15} />
+          习惯打卡
+        </Link>
       </div>
 
       {/* 摘要条 */}
@@ -151,6 +168,30 @@ export function PlansPage() {
               </button>
             ))}
           </div>
+          <label className="flex items-center gap-1 text-xs cursor-pointer" style={{ color: "var(--text-muted)" }}>
+            <input
+              type="checkbox"
+              checked={isHabit}
+              onChange={(e) => setIsHabit(e.target.checked)}
+            />
+            习惯
+          </label>
+          {isHabit && (
+            <select
+              value={habitFrequency}
+              onChange={(e) => setHabitFrequency(e.target.value)}
+              className="rounded-lg px-1.5 py-1 text-xs outline-none"
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-card)",
+                color: "var(--text-primary)",
+              }}
+            >
+              <option value="daily">每天</option>
+              <option value="weekly">每周</option>
+              <option value="monthly">每月</option>
+            </select>
+          )}
           <button
             type="submit"
             disabled={createMut.isPending || !text.trim()}
@@ -348,6 +389,15 @@ function TodoItem({
           >
             <Calendar size={11} />
             {todo.due_date}
+          </div>
+        )}
+        {todo.is_habit && (
+          <div
+            className="mt-1 flex items-center gap-1 text-xs"
+            style={{ color: "var(--accent-primary)" }}
+          >
+            <Repeat size={11} />
+            习惯
           </div>
         )}
       </div>

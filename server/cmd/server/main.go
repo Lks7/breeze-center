@@ -67,6 +67,7 @@ func main() {
 	serviceStore := store.NewServiceStore(db)
 	fusionStore := store.NewFusionStore(db)
 	pomodoroStore := store.NewPomodoroStore(db)
+	checkInStore := store.NewCheckInStore(db)
 	notifStore := store.NewNotificationStore(db)
 	settingsStore := store.NewSettingsStore(db)
 	subscriptionStore := store.NewSubscriptionStore(db)
@@ -144,6 +145,10 @@ func main() {
 			pomodoroH.Register(r)
 			notifH := handler.NewNotificationHandler(notifStore)
 			notifH.Register(r)
+
+			// 习惯打卡（公开）
+			checkInH := handler.NewCheckInHandler(todoStore, checkInStore)
+			checkInH.Register(r)
 
 			// 用户设置（公开）
 			settingsH := handler.NewSettingsHandler(settingsStore)

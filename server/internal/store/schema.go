@@ -188,6 +188,16 @@ CREATE TABLE IF NOT EXISTS fund_nav_history (
 CREATE INDEX IF NOT EXISTS idx_fund_nav_history_holding ON fund_nav_history(holding_id, recorded_at);
 CREATE INDEX IF NOT EXISTS idx_fund_nav_history_code ON fund_nav_history(code, recorded_at);
 
+CREATE TABLE IF NOT EXISTS check_ins (
+    id         TEXT PRIMARY KEY,
+    todo_id    TEXT NOT NULL,
+    check_date TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (todo_id) REFERENCES todos(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_check_ins_todo ON check_ins(todo_id);
+CREATE INDEX IF NOT EXISTS idx_check_ins_date ON check_ins(check_date);
+
 CREATE TABLE IF NOT EXISTS schema_meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -199,11 +209,14 @@ func migrate(db *sql.DB) error {
 	if _, err := db.Exec(schemaSQL); err != nil {
 		return err
 	}
-	// 增量迁移：为已存在的 fund_holdings 表补列（CREATE TABLE IF NOT EXISTS 不会改已有表结构）
+	// 增量迁移：为已存在的表补列（CREATE TABLE IF NOT EXISTS 不会改已有表结构）
 	_, err := db.Exec(`
 ALTER TABLE fund_holdings ADD COLUMN target_profit_rate REAL NOT NULL DEFAULT 0;
 ALTER TABLE fund_holdings ADD COLUMN stop_loss_rate REAL NOT NULL DEFAULT 0;
 ALTER TABLE fund_holdings ADD COLUMN alert_triggered INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE todos ADD COLUMN is_habit INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE todos ADD COLUMN habit_frequency TEXT NOT NULL DEFAULT '';
+ALTER TABLE todos ADD COLUMN habit_target INTEGER NOT NULL DEFAULT 0;
 `)
 	// ALTER TABLE ADD COLUMN 在列已存在时会报错，忽略这个特定错误
 	if err != nil && !isDuplicateColumnErr(err) {

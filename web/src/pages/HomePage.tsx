@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/useTheme";
 import { useHomeSettings, type WidgetId } from "@/hooks/useHomeSettings";
-import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
+import { MagicCard } from "@/components/magicui/magic-card";
+import { BorderBeam } from "@/components/magicui/border-beam";
+
 import { TopBar } from "@/components/layout/TopBar";
 import { Footer } from "@/components/layout/Footer";
 import { HomeSettingsDialog } from "@/components/ui/HomeSettingsDialog";
-import { DraggableWidget } from "@/components/widgets/DraggableWidget";
+
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { HeroCard } from "@/components/widgets/HeroCard";
 import { StatCardWidget } from "@/components/widgets/StatCardWidget";
@@ -29,21 +31,10 @@ import { Rss, Bookmark } from "lucide-react";
 export function HomePage() {
   const [theme, toggleTheme] = useTheme();
   const qc = useQueryClient();
-  const { settings, loading, updateSetting, updateWidgetOrder, resetSettings } = useHomeSettings();
+  const { settings, loading, updateSetting, resetSettings } = useHomeSettings();
   const [showSettings, setShowSettings] = useState(false);
 
-  // 拖拽结束处理
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = settings.widgetOrder.indexOf(active.id as WidgetId);
-      const newIndex = settings.widgetOrder.indexOf(over.id as WidgetId);
-      const newOrder = [...settings.widgetOrder];
-      newOrder.splice(oldIndex, 1);
-      newOrder.splice(newIndex, 0, active.id as WidgetId);
-      updateWidgetOrder(newOrder);
-    }
-  };
+
 
   // 一次拉取所有首页所需数据，子 widget 通过 props 接收，避免重复请求
   const { data: todos = [] } = useQuery({
@@ -192,6 +183,23 @@ export function HomePage() {
     },
   };
 
+  // 每张卡片的 BorderBeam 随机配置（用 id 做种子确保稳定）
+  const beamConfigs = useMemo(() => {
+    const configs: Record<string, { reverse: boolean; duration: number; delay: number }> = {};
+    const visibleIds = settings.widgetOrder.filter(
+      (id) => id !== "service-nav" && widgetMap[id]?.visible
+    );
+    visibleIds.forEach((id, i) => {
+      const seed = id.charCodeAt(0) + id.length + i;
+      configs[id] = {
+        reverse: seed % 2 === 0,
+        duration: 6 + (seed % 5) * 1.5,
+        delay: (seed % 8) * 0.5,
+      };
+    });
+    return configs;
+  }, [settings]);
+
   return (
     <>
       {loading ? (
@@ -208,24 +216,39 @@ export function HomePage() {
         onToggleTheme={toggleTheme} 
         onSettingsClick={() => setShowSettings(true)}
       />
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={settings.widgetOrder} strategy={rectSortingStrategy}>
           <main className="mx-auto w-full max-w-7xl px-6 py-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="columns-1 gap-6 md:columns-2 lg:columns-3 xl:columns-4">
               {settings.widgetOrder
                 .filter((id) => id !== "service-nav" && widgetMap[id]?.visible)
-                .map((id) => {
+                .map((id, i) => {
                   const widget = widgetMap[id];
                   return (
-                    <DraggableWidget key={id} id={id}>
-                      <ErrorBoundary name={id}>
-                        {widget.gridClass ? (
-                          <div className={widget.gridClass}>{widget.element}</div>
-                        ) : (
-                          widget.element
-                        )}
-                      </ErrorBoundary>
-                    </DraggableWidget>
+                    <motion.div
+                      key={id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04, duration: 0.4, ease: "easeOut" }}
+                    >
+                      <MagicCard
+                        className="break-inside-avoid mb-6 rounded-xl"
+                        gradientFrom="#38bdf8"
+                        gradientTo="#818cf8"
+                        gradientSize={250}
+                      >
+                        <ErrorBoundary name={id}>
+                          {widget.element}
+                        </ErrorBoundary>
+                        <BorderBeam
+                          size={60}
+                          duration={beamConfigs[id]?.duration ?? 8}
+                          delay={beamConfigs[id]?.delay ?? 0}
+                          reverse={beamConfigs[id]?.reverse ?? false}
+                          colorFrom="#38bdf8"
+                          colorTo="#818cf8"
+                          borderWidth={1}
+                        />
+                      </MagicCard>
+                    </motion.div>
                   );
                 })}
             </div>
@@ -233,8 +256,6 @@ export function HomePage() {
             {/* 服务导航门户区（网格外） */}
             {settings.showServiceNav && widgetMap["service-nav"].element}
           </main>
-        </SortableContext>
-      </DndContext>
       <Footer />
 
       {/* 首页设置对话框 */}

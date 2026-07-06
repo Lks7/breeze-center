@@ -15,6 +15,9 @@ export function TodoAdmin() {
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const [priority, setPriority] = useState<Todo["priority"]>("medium");
+  const [isHabit, setIsHabit] = useState(false);
+  const [habitFrequency, setHabitFrequency] = useState<string>("daily");
+  const [habitTarget, setHabitTarget] = useState<number>(0);
 
   const { data: todos = [], isLoading } = useQuery({
     queryKey: ["admin", "todos"],
@@ -23,7 +26,13 @@ export function TodoAdmin() {
 
   const createMut = useMutation({
     mutationFn: () =>
-      todoAPI.create({ text, priority } as Partial<Todo>),
+      todoAPI.create({
+        text,
+        priority,
+        is_habit: isHabit,
+        habit_frequency: isHabit ? habitFrequency : "",
+        habit_target: isHabit ? habitTarget : 0,
+      } as Partial<Todo>),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "todos"] });
       setText("");
@@ -88,6 +97,46 @@ export function TodoAdmin() {
             <option value="medium">中</option>
             <option value="low">低</option>
           </select>
+          <label className="flex items-center gap-1 text-sm cursor-pointer" style={{ color: "var(--text-muted)" }}>
+            <input
+              type="checkbox"
+              checked={isHabit}
+              onChange={(e) => setIsHabit(e.target.checked)}
+              className="rounded"
+            />
+            习惯
+          </label>
+          {isHabit && (
+            <>
+              <select
+                value={habitFrequency}
+                onChange={(e) => setHabitFrequency(e.target.value)}
+                className="rounded-lg px-2 py-1.5 text-sm outline-none"
+                style={{
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border-card)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                <option value="daily">每天</option>
+                <option value="weekly">每周</option>
+                <option value="monthly">每月</option>
+              </select>
+              <input
+                type="number"
+                min={0}
+                value={habitTarget}
+                onChange={(e) => setHabitTarget(Number(e.target.value))}
+                placeholder="次数"
+                className="w-16 rounded-lg px-2 py-1.5 text-sm outline-none"
+                style={{
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border-card)",
+                  color: "var(--text-primary)",
+                }}
+              />
+            </>
+          )}
           <button
             type="submit"
             disabled={createMut.isPending || !text.trim()}

@@ -6,7 +6,7 @@ type Theme = "dark" | "light";
 const THEME_KEY = "theme";
 
 export function useTheme(): [Theme, () => void] {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   // 从后端加载主题
   useEffect(() => {

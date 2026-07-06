@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkle } from "@/components/ui/Sparkle";
 import { GradientText } from "@/components/ui/GradientText";
+import { NumberTicker } from "@/components/magicui/number-ticker";
 
 function greeting(hour: number) {
   if (hour < 6) return "夜深了";
@@ -91,7 +92,7 @@ export function HeroCard({
                       }}
                     >
                       <span className="transition group-hover:text-[var(--accent-primary)] group-disabled:group-hover:text-[var(--text-primary)]">
-                        {s.value}
+                        <NumberTicker value={s.value} delay={0.6} />
                       </span>
                     </div>
                     <div

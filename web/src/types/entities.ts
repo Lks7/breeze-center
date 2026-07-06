@@ -58,8 +58,35 @@ export interface Todo {
   priority: "high" | "medium" | "low";
   due_date: string;
   sort_order: number;
+  is_habit: boolean;
+  habit_frequency: string;
+  habit_target: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface Habit extends Todo {
+  today_checked: boolean;
+  streak: number;
+}
+
+export interface CheckIn {
+  id: string;
+  todo_id: string;
+  check_date: string;
+  created_at: string;
+}
+
+export interface HabitStats {
+  todo_id: string;
+  current_streak: number;
+  longest_streak: number;
+  total_check_ins: number;
+  week_done: number;
+  week_target: number;
+  month_done: number;
+  month_target: number;
+  today_done: boolean;
 }
 
 export interface ServiceEntry {

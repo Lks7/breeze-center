@@ -4,36 +4,8 @@
    breeze-center 设计系统 — Neo-Glass Tech
    ============================================================ */
 
-/* 暗色主题（默认） */
+/* 亮色主题（默认） */
 :root,
-.dark {
-  --bg-primary: #0a0e17;
-  --bg-secondary: #0f1623;
-  --bg-card: rgba(17, 25, 40, 0.72);
-  --bg-card-hover: rgba(23, 33, 50, 0.85);
-  --border-card: rgba(255, 255, 255, 0.08);
-  --border-card-hover: rgba(255, 255, 255, 0.16);
-
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-
-  --accent-primary: #38bdf8;
-  --accent-secondary: #818cf8;
-  --accent-tertiary: #c084fc;
-  --accent-gradient: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
-
-  --status-ok: #34d399;
-  --status-warn: #fbbf24;
-  --status-error: #f87171;
-
-  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.35);
-  --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.45);
-
-  color-scheme: dark;
-}
-
-/* 亮色主题 */
 .light {
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
@@ -41,6 +13,9 @@
   --bg-card-hover: rgba(255, 255, 255, 0.95);
   --border-card: rgba(0, 0, 0, 0.06);
   --border-card-hover: rgba(0, 0, 0, 0.12);
+
+  --color-background: var(--bg-card);
+  --color-border: var(--border-card);
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
@@ -59,6 +34,37 @@
   --shadow-card-hover: 0 12px 40px rgba(15, 23, 42, 0.12);
 
   color-scheme: light;
+}
+
+/* 暗色主题 */
+.dark {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #0f1623;
+  --bg-card: rgba(17, 25, 40, 0.72);
+  --bg-card-hover: rgba(23, 33, 50, 0.85);
+  --border-card: rgba(255, 255, 255, 0.08);
+  --border-card-hover: rgba(255, 255, 255, 0.16);
+
+  --color-background: var(--bg-card);
+  --color-border: var(--border-card);
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --accent-primary: #38bdf8;
+  --accent-secondary: #818cf8;
+  --accent-tertiary: #c084fc;
+  --accent-gradient: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+
+  --status-ok: #34d399;
+  --status-warn: #fbbf24;
+  --status-error: #f87171;
+
+  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
 }
 
 /* 全局基础 */
@@ -105,22 +111,22 @@ body {
    工具类组件
    ============================================================ */
 
-/* 玻璃卡片 */
+/* 玻璃卡片（配合 MagicCard 使用时 border 由 MagicCard 提供） */
 .glass-card {
   background: var(--bg-card);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid var(--border-card);
   border-radius: 14px;
   transition:
     transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.25s ease,
     border-color 0.25s ease;
 }
-.glass-card:hover {
-  transform: translateY(-3px);
+.glass-card.has-border {
+  border: 1px solid var(--border-card);
+}
+.glass-card:not(.has-border):hover {
   box-shadow: var(--shadow-card-hover);
-  border-color: var(--border-card-hover);
 }
 
 /* 渐变文字 */
