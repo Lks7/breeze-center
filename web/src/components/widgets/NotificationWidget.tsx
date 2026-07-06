@@ -1,19 +1,14 @@
-import { Bell, CheckCheck, Trash2, Rss, GitBranch, Activity, Timer, Info } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, CheckCheck, Trash2, Info, ExternalLink } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
+import { notificationIconMap } from "@/utils/notifications";
 
 interface Props {
   enterDelay?: number;
 }
 
-const iconMap: Record<string, typeof Bell> = {
-  rss: Rss,
-  github: GitBranch,
-  service: Activity,
-  pomodoro: Timer,
-  system: Info,
-};
-
 export function NotificationWidget({ enterDelay = 0 }: Props) {
+  const navigate = useNavigate();
   const { notifications, unreadCount, markRead, markAllRead, clearAll } = useNotifications();
 
   const list = notifications.slice(0, 20);
@@ -48,9 +43,10 @@ export function NotificationWidget({ enterDelay = 0 }: Props) {
       {list.length === 0 ? (
         <p className="py-6 text-center text-xs" style={{ color: "var(--text-muted)" }}>暂无通知</p>
       ) : (
+        <>
         <div className="space-y-1 max-h-80 overflow-y-auto">
           {list.map((n) => {
-            const Icon = iconMap[n.type] ?? Info;
+            const Icon = notificationIconMap[n.type] ?? Info;
             const t = new Date(n.created_at);
             const timeStr = t.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
 
@@ -82,6 +78,18 @@ export function NotificationWidget({ enterDelay = 0 }: Props) {
             );
           })}
         </div>
+        <button
+          onClick={() => navigate("/notifications")}
+          className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs transition-all hover:scale-[1.02]"
+          style={{
+            color: "var(--accent-primary)",
+            border: "1px solid var(--border-card)",
+          }}
+        >
+          <ExternalLink size={11} />
+          查看全部
+        </button>
+        </>
       )}
     </div>
   );

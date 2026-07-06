@@ -11,6 +11,7 @@ import { GitHubPage } from "@/pages/GitHubPage";
 import { FusionPage } from "@/pages/FusionPage";
 import { BookmarksPage } from "@/pages/BookmarksPage";
 import { FundPage } from "@/pages/FundPage";
+import { NotificationsPage } from "@/pages/NotificationsPage";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
 import { RSSAdmin } from "@/pages/admin/RSSAdmin";
 import { FundAdmin } from "@/pages/admin/FundAdmin";
@@ -35,6 +36,7 @@ function App() {
         <Route path="/fusion" element={<FusionPage />} />
         <Route path="/bookmarks" element={<BookmarksPage />} />
         <Route path="/fund" element={<ErrorBoundary name="基金盈亏"><FundPage /></ErrorBoundary>} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="rss" replace />} />
           <Route path="rss" element={<RSSAdmin />} />
