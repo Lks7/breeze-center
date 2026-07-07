@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import type { Todo } from "../../types/entities";
 
 interface StickyNoteProps {
@@ -71,32 +71,30 @@ export function StickyNote({ todo, onPositionChange, onToggle, onEdit }: StickyN
   };
 
   return (
-    <AnimatePresence>
-      {!isCompleting && (
-        <motion.div
-          className={`absolute w-48 h-48 p-4 rounded-lg shadow-lg cursor-move ${
-            priorityColors[todo.priority]
-          }`}
-          style={{
-            left: `${todo.position_x}px`,
-            top: `${todo.position_y}px`,
-            transform: `rotate(${Math.random() * 6 - 3}deg)`,
-          }}
-          onMouseDown={handleMouseDown}
-          onDoubleClick={() => onEdit(todo)}
-          whileHover={{ scale: 1.05 }}
-          animate={isCompleting ? "completing" : "normal"}
-          variants={{
-            normal: {
-              scale: 1,
-              rotate: Math.random() * 6 - 3,
-              opacity: 1,
-            },
-            completing: {
-              scale: [1, 0.8, 0.3],
-              rotate: [0, 180, 360, 720],
-              x: trashPosition.x - todo.position_x,
-              y: trashPosition.y - todo.position_y,
+    <motion.div
+      className={`absolute w-48 h-48 p-4 rounded-lg shadow-lg cursor-move ${
+        priorityColors[todo.priority]
+      }`}
+      style={{
+        left: `${todo.position_x}px`,
+        top: `${todo.position_y}px`,
+        transform: `rotate(${Math.random() * 6 - 3}deg)`,
+      }}
+      onMouseDown={handleMouseDown}
+      onDoubleClick={() => onEdit(todo)}
+      whileHover={{ scale: 1.05 }}
+      animate={isCompleting ? "completing" : "normal"}
+      variants={{
+        normal: {
+          scale: 1,
+          rotate: Math.random() * 6 - 3,
+          opacity: 1,
+        },
+        completing: {
+          scale: [1, 0.8, 0.3],
+          rotate: [0, 180, 360, 720],
+          x: trashPosition.x - todo.position_x,
+          y: trashPosition.y - todo.position_y,
               opacity: [1, 1, 0],
             },
           }}
@@ -123,7 +121,5 @@ export function StickyNote({ todo, onPositionChange, onToggle, onEdit }: StickyN
             </div>
           )}
         </motion.div>
-      )}
-    </AnimatePresence>
   );
 }
