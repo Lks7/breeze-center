@@ -399,6 +399,21 @@ func (h *FundHandler) GetAllHistory(w http.ResponseWriter, r *http.Request) {
 	writeList(w, views, len(views))
 }
 
+// GetDailyProfit GET /api/v1/admin/fund/daily-profit?days=30
+func (h *FundHandler) GetDailyProfit(w http.ResponseWriter, r *http.Request) {
+	days := parseLimit(r, 30)
+
+	records, err := h.store.ListDailyProfit(days)
+	if err != nil {
+		handleStoreError(w, err)
+		return
+	}
+	if records == nil {
+		records = []store.DailyProfitRecord{}
+	}
+	writeList(w, records, len(records))
+}
+
 // GetSummary GET /api/v1/admin/fund/summary
 func (h *FundHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	holdings, err := h.store.ListHoldings()

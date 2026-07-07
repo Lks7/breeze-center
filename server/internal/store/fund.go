@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"sort"
 
 	"github.com/google/uuid"
 )
@@ -222,4 +223,102 @@ func (s *FundStore) ListAllHistory(limit int) ([]FundNavHistory, error) {
 		history = append(history, h)
 	}
 	return history, rows.Err()
+}
+
+// ============================================================
+// 每日盈亏
+// ============================================================
+
+// DailyProfitRecord 每日盈亏记录。
+type DailyProfitRecord struct {
+	Date       string  `json:"date"`
+	TotalValue float64 `json:"total_value"`
+	DailyPL    float64 `json:"daily_pl"`
+}
+
+// ListDailyProfit 从净值历史计算每日盈亏。
+// 按日期分组，对每个有数据的日期计算当日总市值，再与前一日差分得每日盈亏。
+func (s *FundStore) ListDailyProfit(days int) ([]DailyProfitRecord, error) {
+	// 获取所有持仓（用于获取 shares）
+	rows, err := s.db.Query(`SELECT id, shares FROM fund_holdings WHERE deleted_at=''`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	sharesMap := make(map[string]float64)
+	for rows.Next() {
+		var id string
+		var shares float64
+		if err := rows.Scan(&id, &shares); err != nil {
+			return nil, err
+		}
+		sharesMap[id] = shares
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// 获取净值历史
+	limit := days * len(sharesMap) * 2 // 足够覆盖
+	if limit < 100 {
+		limit = 1000
+	}
+	history, err := s.ListAllHistory(limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// 按日期分组：date -> holdingId -> nav（取当天该基金最后一条记录）
+	type dateSnapshot struct {
+		holdingNav map[string]float64
+	}
+	dateMap := make(map[string]*dateSnapshot)
+	dateOrder := make([]string, 0)
+
+	for _, h := range history {
+		date := h.RecordedAt[:10] // YYYY-MM-DD
+		if _, ok := dateMap[date]; !ok {
+			dateMap[date] = &dateSnapshot{holdingNav: make(map[string]float64)}
+			dateOrder = append(dateOrder, date)
+		}
+		// 后面的记录覆盖前面的（最后一条就是当天的最终净值）
+		dateMap[date].holdingNav[h.HoldingID] = h.Nav
+	}
+
+	// 排序日期（正序）
+	sort.Strings(dateOrder)
+
+	// 对每个日期计算总市值
+	var records []DailyProfitRecord
+	for i, date := range dateOrder {
+		snapshot := dateMap[date]
+		var totalValue float64
+		for hid, nav := range snapshot.holdingNav {
+			if shares, ok := sharesMap[hid]; ok && shares > 0 && nav > 0 {
+				totalValue += shares * nav
+			}
+		}
+
+		dailyPL := 0.0
+		if i > 0 {
+			prevDate := dateOrder[i-1]
+			prevSnapshot := dateMap[prevDate]
+			var prevValue float64
+			for hid, nav := range prevSnapshot.holdingNav {
+				if shares, ok := sharesMap[hid]; ok && shares > 0 && nav > 0 {
+					prevValue += shares * nav
+				}
+			}
+			dailyPL = totalValue - prevValue
+		}
+
+		records = append(records, DailyProfitRecord{
+			Date:       date,
+			TotalValue: totalValue,
+			DailyPL:    dailyPL,
+		})
+	}
+
+	return records, nil
 }

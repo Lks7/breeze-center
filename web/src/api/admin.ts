@@ -16,6 +16,7 @@ import type {
   FundNavUpdateResponse,
   FundNavHistory,
   FundHistoryItem,
+  DailyProfitRecord,
 } from "@/types/entities";
 
 const collection = <T>(path: string) => ({
@@ -72,4 +73,6 @@ export const fundAPI = {
     api.get<FundNavHistory[]>(`/admin/fund/holdings/${id}/history?limit=${limit}`),
   getAllHistory: (limit = 1000) =>
     api.get<FundHistoryItem[]>(`/admin/fund/history?limit=${limit}`),
+  getDailyProfit: (days = 30) =>
+    api.get<DailyProfitRecord[]>(`/admin/fund/daily-profit?days=${days}`),
 };

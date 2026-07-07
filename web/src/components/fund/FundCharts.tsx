@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { FundHolding, FundNavHistory, FundHistoryItem } from "@/types/entities";
+import type { FundHolding, FundNavHistory, FundHistoryItem, DailyProfitRecord } from "@/types/entities";
 
 /**
  * 基金统计图组件 — 纯 SVG 手写，零第三方依赖
@@ -626,6 +626,157 @@ export function CumulativeProfitChart({
         const halfStep = n > 1 ? chartW / (n - 1) / 2 : 20;
         return (
           <rect key={`cap-${i}`} x={x - halfStep} y={padTop} width={halfStep * 2} height={chartH} fill="transparent" onMouseEnter={() => setHoverIdx(i)} onMouseLeave={() => setHoverIdx(null)} style={{ cursor: "pointer" }} />
+        );
+      })}
+    </svg>
+  );
+}
+
+// ============================================================
+// 6. 每日盈亏柱状图
+// ============================================================
+
+export function DailyProfitChart({ records }: { records: DailyProfitRecord[] }) {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  if (records.length === 0) {
+    return <EmptyChart message="暂无每日盈亏数据（抓取后自动积累）" />;
+  }
+
+  // 从后往前取（最新的在前面），但画图按时间正序
+  const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date));
+
+  const W = 400, H = 220;
+  const padLeft = 48, padRight = 16, padTop = 16, padBottom = 36;
+  const chartW = W - padLeft - padRight;
+  const chartH = H - padTop - padBottom;
+
+  const pls = sorted.map((r) => r.daily_pl);
+  const maxPL = Math.max(...pls, 0);
+  const minPL = Math.min(...pls, 0);
+  const range = maxPL - minPL || 1;
+  const yMax = maxPL + range * 0.15;
+  const yMin = minPL - range * 0.15;
+
+  const n = sorted.length;
+  const barW = Math.min(20, chartW / n - 4);
+  const gap = (chartW - barW * n) / (n + 1);
+  const zeroY = padTop + chartH - (0 - yMin) / (yMax - yMin) * chartH;
+  const yOf = (v: number) => padTop + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
+
+  const hovered = hoverIdx !== null ? sorted[hoverIdx] : null;
+
+  // y 轴刻度
+  const yTicks = [yMin, (yMin + yMax) / 2, yMax];
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: 600 }}>
+      {/* y 轴网格线 */}
+      {yTicks.map((v, i) => {
+        const y = yOf(v);
+        return (
+          <g key={i}>
+            <line
+              x1={padLeft} y1={y}
+              x2={W - padRight} y2={y}
+              stroke="var(--border-card)" strokeWidth={0.5} opacity={0.5}
+            />
+            <text x={padLeft - 6} y={y + 3} textAnchor="end" style={{ fontSize: 8, fill: "var(--text-muted)" }}>
+              {formatShort(v)}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* 零线 */}
+      <line x1={padLeft} y1={zeroY} x2={W - padRight} y2={zeroY} stroke="var(--border-card)" strokeWidth={1} strokeDasharray="2 2" />
+
+      {/* 柱状图 */}
+      {sorted.map((r, i) => {
+        const positive = r.daily_pl >= 0;
+        const color = positive ? "#dc2626" : "#16a34a";
+        const barH = Math.abs(yOf(r.daily_pl) - zeroY);
+        const x = padLeft + gap + i * (barW + gap);
+        const y = positive ? zeroY - barH : zeroY;
+        const isHover = hoverIdx === i;
+
+        return (
+          <g key={r.date}>
+            <rect
+              x={x} y={y}
+              width={barW} height={Math.max(barH, 1)}
+              fill={color}
+              rx={2}
+              opacity={isHover ? 1 : 0.8}
+            >
+              <title>{`${r.date}: ${positive ? "+" : ""}${formatMoney(r.daily_pl)}`}</title>
+            </rect>
+            {/* 柱顶数值 */}
+            {isHover && (
+              <text
+                x={x + barW / 2}
+                y={positive ? y - 4 : y + barH + 12}
+                textAnchor="middle"
+                style={{ fontSize: 9, fill: color, fontWeight: 600 }}
+              >
+                {positive ? "+" : ""}{formatShort(r.daily_pl)}
+              </text>
+            )}
+            {/* 日期标签 */}
+            <text
+              x={x + barW / 2}
+              y={H - padBottom + 5}
+              textAnchor="end"
+              transform={`rotate(-45, ${x + barW / 2}, ${H - padBottom + 5})`}
+              style={{
+                fontSize: 8,
+                fill: isHover ? "var(--accent-primary)" : "var(--text-muted)",
+                fontWeight: isHover ? 600 : 400,
+              }}
+            >
+              {r.date.slice(5)}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* hover 浮层 */}
+      {hovered && (
+        <g>
+          <rect
+            x={padLeft + 4} y={padTop + 2}
+            width={120} height={30}
+            rx={4}
+            fill="var(--bg-card)"
+            stroke="var(--border-card)" strokeWidth={0.5}
+            opacity={0.95}
+          />
+          <text x={padLeft + 10} y={padTop + 14} style={{ fontSize: 9, fill: "var(--text-muted)" }}>
+            {hovered.date}
+          </text>
+          <text x={padLeft + 10} y={padTop + 25} style={{
+            fontSize: 10,
+            fill: hovered.daily_pl >= 0 ? "#dc2626" : "#16a34a",
+            fontWeight: 600,
+          }}>
+            {hovered.daily_pl >= 0 ? "+" : ""}{formatMoney(hovered.daily_pl)}
+          </text>
+        </g>
+      )}
+
+      {/* 交互捕获 */}
+      {sorted.map((_, i) => {
+        const x = padLeft + gap + i * (barW + gap);
+        return (
+          <rect
+            key={`cap-${i}`}
+            x={x} y={padTop}
+            width={barW} height={chartH}
+            fill="transparent"
+            onMouseEnter={() => setHoverIdx(i)}
+            onMouseLeave={() => setHoverIdx(null)}
+            style={{ cursor: "pointer" }}
+          />
         );
       })}
     </svg>

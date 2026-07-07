@@ -187,3 +187,10 @@ export interface FundHistoryItem {
   nav: number;
   recorded_at: string;
 }
+
+/** 每日盈亏记录 */
+export interface DailyProfitRecord {
+  date: string;
+  total_value: number;
+  daily_pl: number;
+}

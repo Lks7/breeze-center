@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, TrendingDown, PiggyBank, Loader2 } from "lucide-react";
+import { TrendingUp, TrendingDown, PiggyBank, Loader2, Clock } from "lucide-react";
 import { WidgetCard } from "./WidgetCard";
 import { fundAPI } from "@/api/admin";
 import type { FundHolding, FundSummary } from "@/types/entities";
@@ -107,9 +107,28 @@ export function FundWidget({ enterDelay = 0 }: { enterDelay?: number }) {
 
       {/* 底部小字 */}
       {holdings.length > 0 && (
-        <div className="mt-2 text-[10px] text-right" style={{ color: "var(--text-muted)" }}>
-          共 {s.holding_count} 只 · {s.updated_count} 只已更新
-        </div>
+        <>
+          <div className="mt-2 flex items-center justify-between gap-2" style={{ color: "var(--text-muted)" }}>
+            {/* 更新时间 */}
+            {(() => {
+              const lastUpdated = holdings
+                .filter((h) => h.last_updated)
+                .map((h) => h.last_updated)
+                .sort()
+                .reverse()[0];
+              if (!lastUpdated) return null;
+              return (
+                <span className="flex items-center gap-1 text-[10px]">
+                  <Clock size={10} />
+                  数据更新于 {formatTimeAgo(lastUpdated)}
+                </span>
+              );
+            })()}
+            <span className="text-[10px]">
+              共 {s.holding_count} 只 · {s.updated_count} 只已更新
+            </span>
+          </div>
+        </>
       )}
     </WidgetCard>
   );
@@ -147,6 +166,22 @@ function FundRow({ h }: { h: FundHolding }) {
       </div>
     </li>
   );
+}
+
+function formatTimeAgo(t: string): string {
+  if (!t) return "未知";
+  const d = new Date(t);
+  if (isNaN(d.getTime())) return t.slice(0, 10);
+  const now = new Date();
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const yesterday = new Date(now.getTime() - 86400000);
+  const yStr = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
+  if (dateStr === todayStr) return `今天 ${timeStr}`;
+  if (dateStr === yStr) return `昨天 ${timeStr}`;
+  return `${dateStr} ${timeStr}`;
 }
 
 function formatMoney(n: number): string {

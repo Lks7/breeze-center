@@ -26,6 +26,7 @@ import {
   RateBarChart,
   NavTrendChart,
   CumulativeProfitChart,
+  DailyProfitChart,
 } from "@/components/fund/FundCharts";
 
 /**
@@ -51,6 +52,11 @@ export function FundPage() {
   const { data: allHistory = [] } = useQuery({
     queryKey: ["fund", "history", "all"],
     queryFn: () => fundAPI.getAllHistory(1000),
+    staleTime: 60 * 1000,
+  });
+  const { data: dailyProfit = [] } = useQuery({
+    queryKey: ["fund", "daily-profit"],
+    queryFn: () => fundAPI.getDailyProfit(60),
     staleTime: 60 * 1000,
   });
 
@@ -84,6 +90,20 @@ export function FundPage() {
             <GradientText>基金盈亏</GradientText>
           </h1>
           <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => dailyRefreshMutation.mutate()}
+              disabled={dailyRefreshMutation.isPending}
+              className="btn-ghost inline-flex items-center gap-1.5"
+              style={{ border: "1px solid var(--border-card)" }}
+              title="立即刷新所有基金净值"
+            >
+              {dailyRefreshMutation.isPending ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <RefreshCw size={14} />
+              )}
+              刷新
+            </button>
             <Link
               to="/admin/fund"
               className="btn-ghost inline-flex items-center gap-1.5"
@@ -97,7 +117,7 @@ export function FundPage() {
         </div>
 
         {/* 1. 总盈亏统计卡片 */}
-        <SummaryGrid summary={summary} count={holdings.length} validCount={validCount} />
+        <SummaryGrid summary={summary} count={holdings.length} validCount={validCount} holdings={holdings} />
 
         {/* 1.5 当日盈亏 */}
         {holdings.length > 0 && (
@@ -245,6 +265,14 @@ export function FundPage() {
                 <RateBarChart holdings={holdings} />
               </div>
             </GlassCard>
+
+            {/* 每日盈亏柱状图 */}
+            <GlassCard interactive={false} className="!p-5 lg:col-span-2">
+              <ChartHeader icon={<Activity size={15} />} title="每日盈亏（近60天）" />
+              <div className="flex items-center justify-center pt-1">
+                <DailyProfitChart records={dailyProfit} />
+              </div>
+            </GlassCard>
           </div>
 
           {/* 预警设置总览 */}
@@ -294,14 +322,32 @@ export function FundPage() {
 // ============================================================
 // 总盈亏统计卡片
 // ============================================================
+function formatTimeAgo(t: string): string {
+  if (!t) return "未知";
+  const d = new Date(t);
+  if (isNaN(d.getTime())) return t.slice(0, 10);
+  const now = new Date();
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const yesterday = new Date(now.getTime() - 86400000);
+  const yStr = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
+  if (dateStr === todayStr) return `今天 ${timeStr}`;
+  if (dateStr === yStr) return `昨天 ${timeStr}`;
+  return `${dateStr} ${timeStr}`;
+}
+
 function SummaryGrid({
   summary,
   count,
   validCount,
+  holdings,
 }: {
   summary?: FundSummary;
   count: number;
   validCount: number;
+  holdings: FundHolding[];
 }) {
   const s = summary ?? {
     total_buy: 0,
@@ -344,24 +390,38 @@ function SummaryGrid({
     },
   ];
 
+  // 计算最近更新时间
+  const lastUpdated = holdings
+    .filter((h) => h.last_updated)
+    .map((h) => h.last_updated)
+    .sort()
+    .reverse()[0];
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {cards.map((c) => (
-        <GlassCard key={c.label} interactive={false} className="!p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              {c.label}
-            </span>
-            <span style={{ color: c.color }}>{c.icon}</span>
-          </div>
-          <div className="mt-2 text-xl font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
-            {c.value}
-          </div>
-          <div className="mt-0.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
-            {c.sub}
-          </div>
-        </GlassCard>
-      ))}
+    <div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {cards.map((c) => (
+          <GlassCard key={c.label} interactive={false} className="!p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                {c.label}
+              </span>
+              <span style={{ color: c.color }}>{c.icon}</span>
+            </div>
+            <div className="mt-2 text-xl font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
+              {c.value}
+            </div>
+            <div className="mt-0.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
+              {c.sub}
+            </div>
+          </GlassCard>
+        ))}
+      </div>
+      {lastUpdated && (
+        <div className="mt-2 text-[11px] text-right" style={{ color: "var(--text-muted)" }}>
+          数据更新于 {formatTimeAgo(lastUpdated)}
+        </div>
+      )}
     </div>
   );
 }
@@ -400,7 +460,7 @@ function HoldingsList({ holdings }: { holdings: FundHolding[] }) {
 
       {/* 表头（桌面） */}
       <div
-        className="hidden lg:grid grid-cols-[1.4fr_1fr_1fr_1fr_1.2fr_1.2fr] gap-2 px-5 py-2.5 text-xs font-medium border-b"
+        className="hidden lg:grid grid-cols-[1.4fr_1fr_1fr_1fr_1.2fr_1.2fr_1.2fr] gap-2 px-5 py-2.5 text-xs font-medium border-b"
         style={{
           color: "var(--text-muted)",
           borderColor: "var(--border-card)",
@@ -413,6 +473,7 @@ function HoldingsList({ holdings }: { holdings: FundHolding[] }) {
         <span className="text-right">市值</span>
         <span className="text-right">盈亏</span>
         <span className="text-right">收益率</span>
+        <span className="text-right">更新时间</span>
       </div>
 
       <div className="divide-y" style={{ borderColor: "var(--border-card)" }}>
@@ -449,7 +510,7 @@ function HoldingRow({
   return (
     <div>
       <div
-        className="grid lg:grid-cols-[1.4fr_1fr_1fr_1fr_1.2fr_1.2fr] gap-2 px-5 py-3 text-sm items-center transition-colors hover:bg-[color-mix(in_srgb,var(--accent-primary)_4%,transparent)] cursor-pointer"
+        className="grid lg:grid-cols-[1.4fr_1fr_1fr_1fr_1.2fr_1.2fr_1.2fr] gap-2 px-5 py-3 text-sm items-center transition-colors hover:bg-[color-mix(in_srgb,var(--accent-primary)_4%,transparent)] cursor-pointer"
         onClick={onToggle}
       >
         <div className="min-w-0">
@@ -489,6 +550,9 @@ function HoldingRow({
         </div>
         <div className="text-right tabular-nums font-medium" style={{ color }}>
           {hasNav ? (positive ? "+" : "") + (h.profit_rate * 100).toFixed(2) + "%" : "—"}
+        </div>
+        <div className="text-right text-[11px] hidden lg:block" style={{ color: "var(--text-muted)" }}>
+          {h.last_updated ? formatTimeAgo(h.last_updated) : "—"}
         </div>
       </div>
 

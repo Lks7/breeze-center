@@ -200,6 +200,7 @@ func main() {
 			r.Get("/fund/holdings/{id}/history", fundH.GetHoldingHistory)       // 单只净值历史
 			r.Get("/fund/history", fundH.GetAllHistory)                         // 全部净值历史汇总
 			r.Get("/fund/summary", fundH.GetSummary)                            // 总盈亏统计
+			r.Get("/fund/daily-profit", fundH.GetDailyProfit)                     // 每日盈亏
 
 				// 书签
 				bmH := handler.NewBookmarkHandler(bookmarkStore)
