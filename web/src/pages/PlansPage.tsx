@@ -116,6 +116,11 @@ export function PlansPage() {
     enabled: habits.length > 0,
   });
 
+  // 查询待办完成日期
+  const { data: todoCompletedDates = [] } = useQuery({
+    queryKey: ["todos", "completed-dates", calendarYear, calendarMonth],
+    queryFn: () => todoAPI.listCompletedDates(`${calendarYear}-${String(calendarMonth).padStart(2, "0")}`),
+  });
   const selectedDates = useMemo(() => {
     if (selectedHabitId) return calendarData[selectedHabitId] ?? [];
     return [...new Set(Object.values(calendarData).flat())];
@@ -493,6 +498,7 @@ export function PlansPage() {
               )}
               <CalendarHeatmap
                 checkedDates={selectedDates}
+                completedTodoDates={todoCompletedDates}
                 year={calendarYear}
                 month={calendarMonth}
                 onMonthChange={(y, m) => {

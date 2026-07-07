@@ -1,0 +1,6 @@
+
+  // 查询待办完成日期
+  const { data: todoCompletedDates = [] } = useQuery({
+    queryKey: ["todos", "completed-dates", calendarYear, calendarMonth],
+    queryFn: () => todoAPI.listCompletedDates(`${calendarYear}-${String(calendarMonth).padStart(2, "0")}`),
+  });

@@ -8,7 +8,6 @@ import {
   Rss,
   CheckSquare,
   Bookmark,
-  CalendarCheck,
   Bell,
   Github,
   FileText,

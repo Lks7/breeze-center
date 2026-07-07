@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 interface CalendarHeatmapProps {
   /** checkedDates: 选中月份内的已打卡日期 (YYYY-MM-DD 格式) */
   checkedDates: string[];
+  /** completedTodoDates: 选中月份内待办完成日期 (YYYY-MM-DD 格式) */
+  completedTodoDates?: string[];
   /** year, month: 当前展示的年月（1-based month） */
   year: number;
   month: number;
@@ -21,6 +23,7 @@ function getIntensity(checked: boolean): string {
 
 export function CalendarHeatmap({
   checkedDates,
+  completedTodoDates = [],
   year,
   month,
   onMonthChange,
@@ -30,6 +33,7 @@ export function CalendarHeatmap({
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const checkedSet = useMemo(() => new Set(checkedDates), [checkedDates]);
+  const todoCompletedSet = useMemo(() => new Set(completedTodoDates), [completedTodoDates]);
 
   // 计算该月所有日期格子
   const calendar = useMemo(() => {
@@ -117,6 +121,7 @@ export function CalendarHeatmap({
               }
               const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
               const isChecked = checkedSet.has(dateStr);
+              const hasTodoCompleted = todoCompletedSet.has(dateStr);
               const isToday = dateStr === todayStr;
 
               return (
@@ -136,9 +141,19 @@ export function CalendarHeatmap({
                       : "1px solid var(--border-card)",
                     opacity: isChecked ? 1 : 0.6,
                   }}
-                  title={dateStr + (isChecked ? " ✓" : "")}
+                  title={dateStr + (isChecked ? " ✓习惯" : "") + (hasTodoCompleted ? " ✓待办" : "")}
                 >
                   {day}
+                  {/* 待办完成指示器 - 底部小条 */}
+                  {hasTodoCompleted && (
+                    <span
+                      className="absolute bottom-0 left-0 right-0 h-1 rounded-b-md"
+                      style={{
+                        background: "#3b82f6",
+                        opacity: 0.8,
+                      }}
+                    />
+                  )}
                 </button>
               );
             })}
