@@ -34,6 +34,7 @@ export function HomePage() {
   const qc = useQueryClient();
   const { settings, loading, updateSetting, resetSettings } = useHomeSettings();
   const [showSettings, setShowSettings] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   // 监听侧边栏的设置按钮事件
   useEffect(() => {
@@ -220,8 +221,12 @@ export function HomePage() {
       ) : (
         <>
       <div className="flex min-h-screen">
-        <HomeSidebar />
-        <div className="flex-1 lg:ml-14">
+        <HomeSidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
+        <div
+          className={`flex-1 transition-all duration-300 ml-0 ${
+            sidebarCollapsed ? "lg:ml-14" : "lg:ml-48"
+          }`}
+        >
       <TopBar 
         theme={theme} 
         onToggleTheme={toggleTheme} 

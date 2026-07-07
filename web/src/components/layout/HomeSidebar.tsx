@@ -19,6 +19,8 @@ import {
   LayoutDashboard,
   Menu,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -26,7 +28,8 @@ import { useTheme } from "@/hooks/useTheme";
  * HomeSidebar — 首页左侧边栏导航
  *
  * 固定在左侧，不随滚动移动。
- * 桌面端始终显示图标导航，移动端折叠为汉堡菜单。
+ * 桌面端可折叠：点击底部箭头展开显示标签，再点收回图标模式。
+ * 移动端折叠为汉堡菜单。
  */
 
 const NAV_ITEMS = [
@@ -44,7 +47,15 @@ const NAV_ITEMS = [
   { to: "/files", label: "文件中心", icon: FolderOpen },
 ];
 
-export function HomeSidebar() {
+export const SIDEBAR_COLLAPSED_W = 56;
+export const SIDEBAR_EXPANDED_W = 192;
+
+interface HomeSidebarProps {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
   const [theme, toggleTheme] = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,6 +65,8 @@ export function HomeSidebar() {
     if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
   };
+
+  const w = collapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W;
 
   return (
     <>
@@ -80,10 +93,11 @@ export function HomeSidebar() {
       {/* 侧边栏 */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-40 flex w-14 flex-col backdrop-blur-xl transition-transform duration-300
+          fixed inset-y-0 left-0 z-40 flex flex-col backdrop-blur-xl transition-all duration-300
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
         style={{
+          width: mobileOpen ? SIDEBAR_EXPANDED_W : w,
           background: "color-mix(in srgb, var(--bg-secondary) 85%, transparent)",
           borderRight: "1px solid var(--border-card)",
         }}
@@ -91,13 +105,19 @@ export function HomeSidebar() {
         {/* Logo */}
         <button
           onClick={() => navigate("/")}
-          className="flex items-center justify-center py-4 transition-all hover:scale-105"
+          className="flex items-center gap-3 px-3 py-4 transition-all hover:scale-105"
           title="BreezeCenter"
         >
           <div
-            className="h-7 w-7 rounded-lg"
+            className="h-7 w-7 shrink-0 rounded-lg"
             style={{ background: "var(--accent-gradient)" }}
           />
+          {/* 展开时的文字 logo */}
+          {!collapsed && (
+            <span className="text-sm font-semibold tracking-tight whitespace-nowrap overflow-hidden" style={{ color: "var(--text-primary)" }}>
+              BreezeCenter
+            </span>
+          )}
         </button>
 
         {/* 分隔线 */}
@@ -113,7 +133,9 @@ export function HomeSidebar() {
                 key={item.to}
                 to={item.to}
                 onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-center rounded-lg px-1 py-2.5 transition-all"
+                className={`flex items-center gap-3 rounded-lg px-2 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] ${
+                  collapsed ? "justify-center" : ""
+                }`}
                 style={{
                   background: active
                     ? "color-mix(in srgb, var(--accent-primary) 15%, transparent)"
@@ -123,10 +145,22 @@ export function HomeSidebar() {
               >
                 <Icon
                   size={18}
+                  className="shrink-0"
                   style={{
                     color: active ? "var(--accent-primary)" : "var(--text-secondary)",
                   }}
                 />
+                {/* 展开时的文字标签 */}
+                {!collapsed && (
+                  <span
+                    className="text-sm truncate whitespace-nowrap overflow-hidden"
+                    style={{
+                      color: active ? "var(--accent-primary)" : "var(--text-secondary)",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                )}
               </NavLink>
             );
           })}
@@ -137,27 +171,40 @@ export function HomeSidebar() {
           {/* 主题切换 */}
           <button
             onClick={toggleTheme}
-            className="flex w-full items-center justify-center rounded-lg px-1 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)]"
+            className={`flex w-full items-center gap-3 rounded-lg px-2 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] ${
+              collapsed ? "justify-center" : ""
+            }`}
             title={theme === "dark" ? "亮色模式" : "暗色模式"}
           >
             {theme === "dark" ? (
-              <Sun size={18} style={{ color: "var(--text-secondary)" }} />
+              <Sun size={18} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
             ) : (
-              <Moon size={18} style={{ color: "var(--text-secondary)" }} />
+              <Moon size={18} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
+            )}
+            {!collapsed && (
+              <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
+                {theme === "dark" ? "亮色模式" : "暗色模式"}
+              </span>
             )}
           </button>
 
           {/* 首页设置 */}
           <button
             onClick={() => {
-              // 触发 TopBar 的设置按钮——通过事件冒泡触发 HomePage 的 settings
               window.dispatchEvent(new CustomEvent("open-home-settings"));
               setMobileOpen(false);
             }}
-            className="flex w-full items-center justify-center rounded-lg px-1 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)]"
+            className={`flex w-full items-center gap-3 rounded-lg px-2 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] ${
+              collapsed ? "justify-center" : ""
+            }`}
             title="首页设置"
           >
-            <Settings size={18} style={{ color: "var(--text-secondary)" }} />
+            <Settings size={18} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
+            {!collapsed && (
+              <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
+                首页设置
+              </span>
+            )}
           </button>
 
           {/* 后台管理 */}
@@ -166,11 +213,40 @@ export function HomeSidebar() {
               navigate("/admin");
               setMobileOpen(false);
             }}
-            className="flex w-full items-center justify-center rounded-lg px-1 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)]"
+            className={`flex w-full items-center gap-3 rounded-lg px-2 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] ${
+              collapsed ? "justify-center" : ""
+            }`}
             title="后台管理"
           >
-            <LayoutDashboard size={18} style={{ color: "var(--text-secondary)" }} />
+            <LayoutDashboard size={18} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
+            {!collapsed && (
+              <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
+                后台管理
+              </span>
+            )}
           </button>
+
+          {/* 折叠/展开切换按钮 */}
+          <div className="pt-1 hidden lg:block">
+            <button
+              onClick={onToggle}
+              className={`flex w-full items-center gap-3 rounded-lg px-2 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] ${
+                collapsed ? "justify-center" : ""
+              }`}
+              title={collapsed ? "展开侧边栏" : "收起侧边栏"}
+            >
+              {collapsed ? (
+                <ChevronRight size={18} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
+              ) : (
+                <>
+                  <ChevronLeft size={18} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
+                  <span className="text-sm truncate" style={{ color: "var(--text-secondary)" }}>
+                    收起
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </aside>
     </>
