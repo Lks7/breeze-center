@@ -58,6 +58,8 @@ export interface Todo {
   priority: "high" | "medium" | "low";
   due_date: string;
   sort_order: number;
+  position_x: number;
+  position_y: number;
   is_habit: boolean;
   habit_frequency: string;
   habit_target: number;

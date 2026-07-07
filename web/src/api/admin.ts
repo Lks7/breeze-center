@@ -55,6 +55,8 @@ export const todoAPI = {
     api.patch<Todo>(`/admin/todos/${id}/toggle`),
   listCompletedDates: (month: string) =>
     api.get<string[]>(`/admin/todos/completed-dates?month=${month}`),
+  updatePosition: (id: string, x: number, y: number) =>
+    api.patch<{status: string}>(`/admin/todos/${id}/position`, {position_x: x, position_y: y}),
 };
 export const serviceAPI = collection<ServiceEntry>("services");
 

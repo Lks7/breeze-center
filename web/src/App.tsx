@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AuroraBackground } from "@/components/ui/AuroraBackground";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { HomePage } from "@/pages/HomePage";
-import { PlansPage } from "@/pages/PlansPage";
+import PlansPage from "@/pages/PlansPage";
 import { ServicesPage } from "@/pages/ServicesPage";
 import { BlogPage } from "@/pages/BlogPage";
 import { RSSPage } from "@/pages/RSSPage";
