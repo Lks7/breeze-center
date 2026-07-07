@@ -43,10 +43,7 @@ export function AdminLayout() {
           className="flex items-center gap-2 px-5 py-4 transition-all hover:scale-105"
           title="回到首页"
         >
-          <div
-            className="h-6 w-6 rounded-lg"
-            style={{ background: "var(--accent-gradient)" }}
-          />
+          <img src="/logo.png" alt="Logo" className="h-6 w-6 rounded-lg object-cover" />
           <span className="text-sm font-semibold">
             Breeze<span className="gradient-text">Center</span>
           </span>

@@ -102,29 +102,8 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
           borderRight: "1px solid var(--border-card)",
         }}
       >
-        {/* Logo */}
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center gap-3 px-3 py-4 transition-all hover:scale-105"
-          title="BreezeCenter"
-        >
-          <div
-            className="h-7 w-7 shrink-0 rounded-lg"
-            style={{ background: "var(--accent-gradient)" }}
-          />
-          {/* 展开时的文字 logo */}
-          {!collapsed && (
-            <span className="text-sm font-semibold tracking-tight whitespace-nowrap overflow-hidden" style={{ color: "var(--text-primary)" }}>
-              BreezeCenter
-            </span>
-          )}
-        </button>
-
-        {/* 分隔线 */}
-        <div className="mx-3 mb-1 h-px" style={{ background: "var(--border-card)" }} />
-
-        {/* 导航链接 */}
-        <nav className="flex-1 space-y-0.5 px-2 py-1 overflow-y-auto">
+        {/* 导航链接 — 首页显示在最顶层 */}
+        <nav className="flex-1 space-y-0.5 px-2 pt-3 pb-1 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.to);

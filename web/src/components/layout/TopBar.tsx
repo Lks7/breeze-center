@@ -64,10 +64,7 @@ export function TopBar({ theme, onToggleTheme, onSettingsClick }: TopBarProps) {
         className="flex items-center gap-2 transition-all hover:scale-105"
         title="回到首页"
       >
-        <div
-          className="h-7 w-7 rounded-lg"
-          style={{ background: "var(--accent-gradient)" }}
-        />
+        <img src="/logo.png" alt="Logo" className="h-7 w-7 rounded-lg object-cover" />
         <span className="text-base font-semibold tracking-tight">
           Breeze<span className="gradient-text">Center</span>
         </span>
