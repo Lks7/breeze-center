@@ -2,11 +2,14 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { todoAPI } from "../api/admin";
 import { StickyWall } from "../components/plans/StickyWall";
+import { TrashBin } from "../components/plans/TrashBin";
+import { CompletedDrawer } from "../components/plans/CompletedDrawer";
 import type { Todo } from "../types/entities";
 
 export default function PlansPage() {
   const [newTodoText, setNewTodoText] = useState("");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: todos = [], isLoading } = useQuery({
@@ -68,8 +71,13 @@ export default function PlansPage() {
     });
   };
 
+  const handleRestore = (id: string) => {
+    toggleMutation.mutate(id);
+  };
+
   // 只显示非习惯的待办
   const regularTodos = todos.filter((t) => !t.is_habit);
+  const completedTodos = regularTodos.filter((t) => t.done);
 
   if (isLoading) {
     return <div className="p-8">加载中...</div>;
@@ -141,6 +149,20 @@ export default function PlansPage() {
           </div>
         </div>
       )}
+
+      {/* 垃圾桶 */}
+      <TrashBin 
+        completedCount={completedTodos.length} 
+        onOpenDrawer={() => setIsDrawerOpen(true)} 
+      />
+
+      {/* 已完成抽屉 */}
+      <CompletedDrawer
+        isOpen={isDrawerOpen}
+        completedTodos={completedTodos}
+        onClose={() => setIsDrawerOpen(false)}
+        onRestore={handleRestore}
+      />
     </div>
   );
 }

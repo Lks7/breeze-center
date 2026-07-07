@@ -32,7 +32,7 @@ export function StickyWall({ todos, onToggle, onEdit }: StickyWallProps) {
 
   return (
     <div className="relative w-full h-screen bg-gradient-to-br from-amber-50 to-orange-50">
-      {todos.map((todo) => (
+      {todos.filter(t => !t.done).map((todo) => (
         <StickyNote
           key={todo.id}
           todo={todo}
