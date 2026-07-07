@@ -16,6 +16,8 @@ type Todo struct {
 	Priority       string `json:"priority"` // high | medium | low
 	DueDate        string `json:"due_date"`
 	SortOrder      int    `json:"sort_order"`
+	PositionX      int    `json:"position_x"` // 便利贴 X 坐标
+	PositionY      int    `json:"position_y"` // 便利贴 Y 坐标
 	IsHabit        bool   `json:"is_habit"`
 	HabitFrequency string `json:"habit_frequency"` // daily | weekly | monthly
 	HabitTarget    int    `json:"habit_target"`
@@ -33,7 +35,7 @@ func NewTodoStore(db *sql.DB) *TodoStore { return &TodoStore{db: db} }
 // List 返回所有未删除待办，按 done, sort_order, created_at 排序。
 func (s *TodoStore) List() ([]Todo, error) {
 	rows, err := s.db.Query(`
-		SELECT id, text, done, priority, due_date, sort_order,
+		SELECT id, text, done, priority, due_date, sort_order, position_x, position_y,
 		       is_habit, habit_frequency, habit_target,
 		       created_at, updated_at, completed_at
 		FROM todos WHERE deleted_at='' ORDER BY done ASC, sort_order ASC, created_at DESC`)
@@ -45,7 +47,7 @@ func (s *TodoStore) List() ([]Todo, error) {
 	for rows.Next() {
 		var t Todo
 		var done, isHabit int
-		if err := rows.Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder,
+		if err := rows.Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder, &t.PositionX, &t.PositionY,
 			&isHabit, &t.HabitFrequency, &t.HabitTarget,
 			&t.CreatedAt, &t.UpdatedAt, &t.CompletedAt); err != nil {
 			return nil, err
@@ -60,7 +62,7 @@ func (s *TodoStore) List() ([]Todo, error) {
 // ListHabits 返回所有习惯目标（is_habit=1 且未删除）。
 func (s *TodoStore) ListHabits() ([]Todo, error) {
 	rows, err := s.db.Query(`
-		SELECT id, text, done, priority, due_date, sort_order,
+		SELECT id, text, done, priority, due_date, sort_order, position_x, position_y,
 		       is_habit, habit_frequency, habit_target,
 		       created_at, updated_at, completed_at
 		FROM todos WHERE deleted_at='' AND is_habit=1
@@ -73,7 +75,7 @@ func (s *TodoStore) ListHabits() ([]Todo, error) {
 	for rows.Next() {
 		var t Todo
 		var done, isHabit int
-		if err := rows.Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder,
+		if err := rows.Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder, &t.PositionX, &t.PositionY,
 			&isHabit, &t.HabitFrequency, &t.HabitTarget,
 			&t.CreatedAt, &t.UpdatedAt, &t.CompletedAt); err != nil {
 			return nil, err
@@ -116,15 +118,16 @@ func (s *TodoStore) Create(in TodoInput) (*Todo, error) {
 	t := &Todo{
 		ID: newID(), Text: in.Text, Done: done == 1, Priority: in.Priority,
 		DueDate: in.DueDate, SortOrder: in.SortOrder,
+		PositionX: 0, PositionY: 0, // 新创建的待办默认位置
 		IsHabit: isHabit == 1, HabitFrequency: freq, HabitTarget: target,
 		CreatedAt: now, UpdatedAt: now,
 	}
 	_, err := s.db.Exec(`INSERT INTO todos
-		(id, text, done, priority, due_date, sort_order,
+		(id, text, done, priority, due_date, sort_order, position_x, position_y,
 		 is_habit, habit_frequency, habit_target,
 		 created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		t.ID, t.Text, done, t.Priority, t.DueDate, t.SortOrder,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		t.ID, t.Text, done, t.Priority, t.DueDate, t.SortOrder, 0, 0,
 		isHabit, freq, target,
 		now, now)
 	if err != nil {
@@ -229,4 +232,14 @@ func (s *TodoStore) ListCompletedDatesByMonth(month string) ([]string, error) {
 		dates = append(dates, date)
 	}
 	return dates, rows.Err()
+}
+
+// UpdatePosition 更新待办的位置坐标（用于便利贴拖拽）
+func (s *TodoStore) UpdatePosition(id string, x, y int) error {
+	_, err := s.db.Exec(`
+		UPDATE todos 
+		SET position_x=?, position_y=?, updated_at=?
+		WHERE id=? AND deleted_at=''`,
+		x, y, now(), id)
+	return err
 }

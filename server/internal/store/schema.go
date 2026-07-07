@@ -77,6 +77,8 @@ CREATE TABLE IF NOT EXISTS todos (
     priority   TEXT NOT NULL DEFAULT 'medium',   -- high | medium | low
     due_date   TEXT NOT NULL DEFAULT '',
     sort_order INTEGER NOT NULL DEFAULT 0,
+    position_x INTEGER NOT NULL DEFAULT 0,        -- 便利贴 X 坐标
+    position_y INTEGER NOT NULL DEFAULT 0,        -- 便利贴 Y 坐标
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     completed_at TEXT NOT NULL DEFAULT '',        -- 完成时间
@@ -222,6 +224,8 @@ func migrate(db *sql.DB) error {
 		`ALTER TABLE todos ADD COLUMN habit_frequency TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE todos ADD COLUMN habit_target INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE todos ADD COLUMN completed_at TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE todos ADD COLUMN position_x INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE todos ADD COLUMN position_y INTEGER NOT NULL DEFAULT 0`,
 	}
 	for _, stmt := range alterStmts {
 		// ALTER TABLE ADD COLUMN 在列已存在时会报错，忽略这个特定错误

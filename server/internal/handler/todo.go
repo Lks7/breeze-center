@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -87,4 +88,22 @@ func (h *TodoHandler) ListCompletedDates(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeData(w, http.StatusOK, dates)
+}
+
+// UpdatePosition PATCH /api/v1/admin/todos/{id}/position
+func (h *TodoHandler) UpdatePosition(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		PositionX int `json:"position_x"`
+		PositionY int `json:"position_y"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		return
+	}
+	id := chi.URLParam(r, "id")
+	if err := h.store.UpdatePosition(id, body.PositionX, body.PositionY); err != nil {
+		handleStoreError(w, err)
+		return
+	}
+	writeData(w, http.StatusOK, map[string]string{"status": "ok"})
 }

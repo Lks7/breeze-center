@@ -216,6 +216,7 @@ func main() {
 				r.Post("/todos", todoH.Create)
 				r.Put("/todos/{id}", todoH.Update)
 				r.Patch("/todos/{id}/toggle", todoH.ToggleDone)
+				r.Patch("/todos/{id}/position", todoH.UpdatePosition)
 				r.Delete("/todos/{id}", todoH.Delete)
 
 				// 服务实例（动态）
