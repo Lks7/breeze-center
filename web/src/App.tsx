@@ -13,6 +13,7 @@ import { CheckInPage } from "@/pages/CheckInPage";
 import { BookmarksPage } from "@/pages/BookmarksPage";
 import { FundPage } from "@/pages/FundPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
+import { PublicLayout } from "@/components/layout/PublicLayout";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
 import { RSSAdmin } from "@/pages/admin/RSSAdmin";
 import { FundAdmin } from "@/pages/admin/FundAdmin";
@@ -27,18 +28,20 @@ function App() {
     <div className="min-h-screen">
       <AuroraBackground />
       <Routes>
-        <Route path="/" element={<ErrorBoundary name="首页"><HomePage /></ErrorBoundary>} />
-        <Route path="/plans" element={<PlansPage />} />
-        <Route path="/services" element={<ServicesPage />} />
-        <Route path="/blog" element={<BlogPage />} />
-        <Route path="/rss" element={<RSSPage />} />
-        <Route path="/files" element={<FilesPage />} />
-        <Route path="/github" element={<GitHubPage />} />
-        <Route path="/check-in" element={<CheckInPage />} />
-        <Route path="/fusion" element={<FusionPage />} />
-        <Route path="/bookmarks" element={<BookmarksPage />} />
-        <Route path="/fund" element={<ErrorBoundary name="基金盈亏"><FundPage /></ErrorBoundary>} />
-        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<ErrorBoundary name="首页"><HomePage /></ErrorBoundary>} />
+          <Route path="/plans" element={<PlansPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/rss" element={<RSSPage />} />
+          <Route path="/files" element={<FilesPage />} />
+          <Route path="/github" element={<GitHubPage />} />
+          <Route path="/check-in" element={<CheckInPage />} />
+          <Route path="/fusion" element={<FusionPage />} />
+          <Route path="/bookmarks" element={<BookmarksPage />} />
+          <Route path="/fund" element={<ErrorBoundary name="基金盈亏"><FundPage /></ErrorBoundary>} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+        </Route>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="rss" replace />} />
           <Route path="rss" element={<RSSAdmin />} />

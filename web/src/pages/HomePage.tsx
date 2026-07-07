@@ -7,7 +7,7 @@ import { MagicCard } from "@/components/magicui/magic-card";
 import { BorderBeam } from "@/components/magicui/border-beam";
 
 import { TopBar } from "@/components/layout/TopBar";
-import { HomeSidebar } from "@/components/layout/HomeSidebar";
+
 import { Footer } from "@/components/layout/Footer";
 import { HomeSettingsDialog } from "@/components/ui/HomeSettingsDialog";
 
@@ -34,7 +34,6 @@ export function HomePage() {
   const qc = useQueryClient();
   const { settings, loading, updateSetting, resetSettings } = useHomeSettings();
   const [showSettings, setShowSettings] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   // 监听侧边栏的设置按钮事件
   useEffect(() => {
@@ -220,13 +219,6 @@ export function HomePage() {
         </div>
       ) : (
         <>
-      <div className="flex min-h-screen">
-        <HomeSidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
-        <div
-          className={`flex-1 transition-all duration-300 ml-0 ${
-            sidebarCollapsed ? "lg:ml-14" : "lg:ml-48"
-          }`}
-        >
       <TopBar 
         theme={theme} 
         onToggleTheme={toggleTheme} 
@@ -273,8 +265,6 @@ export function HomePage() {
             {settings.showServiceNav && widgetMap["service-nav"].element}
           </main>
       <Footer />
-        </div>
-      </div>
 
       {/* 首页设置对话框 */}
       <HomeSettingsDialog
