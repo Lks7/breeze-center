@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Flame, Sparkles } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -10,22 +10,27 @@ import { StatsCards } from "@/components/checkin/StatsCards";
 import { checkInAPI } from "@/api/checkin";
 import type { HabitStats } from "@/types/entities";
 
+/**
+ * CheckInPage - 习惯打卡快捷页
+ *
+ * 核心打卡功能已整合到 /plans（目标管理中心）。
+ * 此页面保留为专注的打卡入口，方便快速操作。
+ */
 export function CheckInPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const today = new Date();
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1);
   const [checkingId, setCheckingId] = useState<string | null>(null);
 
-  // 加载习惯列表
   const { data: habits = [], isLoading } = useQuery({
-    queryKey: ["habits"],
+    queryKey: ["habits", "checkin-page"],
     queryFn: checkInAPI.listHabits,
   });
 
-  // 加载所有习惯的统计数据
   const { data: habitStatsMap } = useQuery({
-    queryKey: ["habits", "stats", habits.map((h) => h.id).join(",")],
+    queryKey: ["habits", "stats", "checkin-page", habits.map((h) => h.id).join(",")],
     queryFn: async () => {
       const map: Record<string, HabitStats> = {};
       await Promise.all(
@@ -33,7 +38,7 @@ export function CheckInPage() {
           try {
             map[h.id] = await checkInAPI.getStats(h.id);
           } catch {
-            // 该习惯暂无统计数据
+            // ignore
           }
         })
       );
@@ -42,31 +47,19 @@ export function CheckInPage() {
     enabled: habits.length > 0,
   });
 
-  // 加载当前月份所有习惯的打卡日期（用于热力图）
   const { data: calendarData = {} } = useQuery({
-    queryKey: ["checkins", "calendar", calendarYear, calendarMonth],
+    queryKey: ["checkins", "calendar", calendarYear, calendarMonth, habits.map((h) => h.id).join(",")],
     queryFn: async () => {
-      const monthStr = `${calendarYear}-${String(calendarMonth).padStart(2, "0")}`;
-      const allDates: Record<string, string[]> = {};
-      await Promise.all(
-        habits.map(async (h) => {
-          try {
-            allDates[h.id] = await checkInAPI.listCheckIns(h.id, monthStr);
-          } catch {
-            allDates[h.id] = [];
-          }
-        })
-      );
-      return allDates;
+      const ids = habits.map((h) => h.id);
+      if (ids.length === 0) return {};
+      return checkInAPI.batchListCheckIns(ids, `${calendarYear}-${String(calendarMonth).padStart(2, "0")}`);
     },
     enabled: habits.length > 0,
   });
 
-  // 选中某个习惯查看其日历
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const selectedDates = selectedHabitId ? calendarData[selectedHabitId] ?? [] : [];
 
-  // 聚合统计
   const aggStats = useMemo(() => {
     if (!habitStatsMap) return null;
     const entries = Object.values(habitStatsMap);
@@ -75,34 +68,64 @@ export function CheckInPage() {
       currentStreak: Math.max(...entries.map((s) => s.current_streak), 0),
       longestStreak: Math.max(...entries.map((s) => s.longest_streak), 0),
       weekDone: entries.reduce((sum, s) => sum + s.week_done, 0),
-      weekTarget: entries.reduce((sum, s) => sum + s.week_target, 0),
+      weekTarget: Math.max(...entries.map((s) => s.week_target), 0),
       monthDone: entries.reduce((sum, s) => sum + s.month_done, 0),
-      monthTarget: entries.reduce((sum, s) => sum + s.month_target, 0),
+      monthTarget: Math.max(...entries.map((s) => s.month_target), 0),
       totalCheckIns: entries.reduce((sum, s) => sum + s.total_check_ins, 0),
     };
   }, [habitStatsMap]);
 
-  // 打卡 mutation
+  const invalidateAll = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ["habits"] });
+    qc.invalidateQueries({ queryKey: ["habits", "stats"] });
+    qc.invalidateQueries({ queryKey: ["checkins"] });
+  }, [qc]);
+
   const checkInMut = useMutation({
     mutationFn: async (todoId: string) => {
       setCheckingId(todoId);
       return checkInAPI.createCheckIn(todoId);
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["habits"] });
-      qc.invalidateQueries({ queryKey: ["habits", "stats"] });
-      qc.invalidateQueries({ queryKey: ["checkins"] });
-    },
+    onSuccess: () => invalidateAll(),
     onSettled: () => setCheckingId(null),
   });
 
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const checkInDateMut = useMutation({
+    mutationFn: async ({ todoId, date }: { todoId: string; date: string }) => {
+      setCheckingId(todoId);
+      return checkInAPI.createCheckIn(todoId, date);
+    },
+    onSuccess: () => invalidateAll(),
+    onSettled: () => setCheckingId(null),
+  });
+
+  const uncheckMut = useMutation({
+    mutationFn: async ({ todoId, date }: { todoId: string; date: string }) => {
+      setCheckingId(todoId);
+      return checkInAPI.deleteCheckInByDate(todoId, date);
+    },
+    onSuccess: () => invalidateAll(),
+    onSettled: () => setCheckingId(null),
+  });
+
   const uncheckedHabits = habits.filter((h) => !h.today_checked);
   const checkedHabits = habits.filter((h) => h.today_checked);
 
+  const handleDateClick = useCallback(
+    (date: string) => {
+      if (!selectedHabitId) return;
+      const checkedDates = calendarData[selectedHabitId] ?? [];
+      if (checkedDates.includes(date)) {
+        uncheckMut.mutate({ todoId: selectedHabitId, date });
+      } else {
+        checkInDateMut.mutate({ todoId: selectedHabitId, date });
+      }
+    },
+    [selectedHabitId, calendarData, checkInDateMut, uncheckMut]
+  );
+
   return (
     <div className="mx-auto w-full max-w-4xl px-6 py-6">
-      {/* 顶部 */}
       <div className="mb-6 flex items-center gap-3">
         <Link
           to="/"
@@ -115,9 +138,13 @@ export function CheckInPage() {
         <h1 className="text-2xl font-semibold">
           <GradientText>习惯打卡</GradientText>
         </h1>
-        <span className="text-xs rounded-full px-2 py-0.5" style={{ background: "var(--bg-card)", color: "var(--text-muted)" }}>
-          {todayStr}
-        </span>
+        <button
+          onClick={() => navigate("/plans")}
+          className="btn-ghost ml-auto text-sm"
+          style={{ border: "1px solid var(--border-card)" }}
+        >
+          目标管理中心 →
+        </button>
       </div>
 
       {isLoading ? (
@@ -138,14 +165,14 @@ export function CheckInPage() {
               className="underline"
               style={{ color: "var(--accent-primary)" }}
             >
-              计划管理
+              目标管理中心
             </Link>{" "}
-            页面，创建待办时勾选「设为习惯」即可开始
+            创建待办时勾选「习惯」即可开始
           </p>
         </GlassCard>
       ) : (
         <div className="space-y-6">
-          {/* 今日打卡区 */}
+          {/* 今日打卡 */}
           <section>
             <h2 className="mb-3 flex items-center gap-2 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
               <Flame size={14} style={{ color: "#f97316" }} />
@@ -168,13 +195,12 @@ export function CheckInPage() {
             </div>
           </section>
 
-          {/* 日历热力图 */}
+          {/* 日历 */}
           <section>
             <h2 className="mb-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
               打卡日历
             </h2>
             <GlassCard interactive={false}>
-              {/* 习惯选择器 */}
               {habits.length > 1 && (
                 <div className="mb-3 flex flex-wrap gap-1.5">
                   <button
@@ -203,22 +229,24 @@ export function CheckInPage() {
                 </div>
               )}
               <CalendarHeatmap
-                checkedDates={
-                  selectedHabitId
-                    ? selectedDates
-                    : [...new Set(Object.values(calendarData).flat())]
-                }
+                checkedDates={selectedDates}
                 year={calendarYear}
                 month={calendarMonth}
                 onMonthChange={(y, m) => {
                   setCalendarYear(y);
                   setCalendarMonth(m);
                 }}
+                onDateClick={selectedHabitId ? handleDateClick : undefined}
               />
+              {selectedHabitId && (
+                <p className="mt-2 text-center text-xs" style={{ color: "var(--text-muted)" }}>
+                  点击日期可补打卡/取消打卡
+                </p>
+              )}
             </GlassCard>
           </section>
 
-          {/* 统计卡片 */}
+          {/* 统计 */}
           {aggStats && (
             <section>
               <h2 className="mb-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>

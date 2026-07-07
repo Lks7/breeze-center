@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -26,7 +27,9 @@ func (h *CheckInHandler) Register(r chi.Router) {
 	r.Get("/habits/{id}/stats", h.HabitStats)
 	r.Post("/check-ins", h.CreateCheckIn)
 	r.Delete("/check-ins/{id}", h.DeleteCheckIn)
+	r.Delete("/check-ins/delete-by-date", h.DeleteCheckInByDate)
 	r.Get("/check-ins", h.ListCheckIns)
+	r.Get("/check-ins/batch", h.BatchListCheckIns)
 }
 
 // HabitWithCheckIn 习惯目标 + 今日打卡状态 + 连胜。
@@ -142,6 +145,66 @@ func (h *CheckInHandler) ListCheckIns(w http.ResponseWriter, r *http.Request) {
 		dates = []string{}
 	}
 	writeData(w, http.StatusOK, dates)
+}
+
+// DeleteCheckInByDate DELETE /api/v1/check-ins/delete-by-date?todo_id=xxx&date=2026-07-07
+func (h *CheckInHandler) DeleteCheckInByDate(w http.ResponseWriter, r *http.Request) {
+	todoID := r.URL.Query().Get("todo_id")
+	date := r.URL.Query().Get("date")
+	if todoID == "" || date == "" {
+		writeError(w, http.StatusBadRequest, "BAD_REQUEST", "todo_id and date are required")
+		return
+	}
+	if err := h.checkInStore.DeleteByDate(todoID, date); err != nil {
+		handleStoreError(w, err)
+		return
+	}
+	writeData(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+// BatchListCheckIns GET /api/v1/check-ins/batch?todo_ids=id1,id2&month=2026-07
+func (h *CheckInHandler) BatchListCheckIns(w http.ResponseWriter, r *http.Request) {
+	ids := r.URL.Query().Get("todo_ids")
+	monthStr := r.URL.Query().Get("month")
+	if ids == "" {
+		writeError(w, http.StatusBadRequest, "BAD_REQUEST", "todo_ids is required (comma-separated)")
+		return
+	}
+	if monthStr == "" {
+		monthStr = time.Now().Format("2006-01")
+	}
+	t, err := time.Parse("2006-01", monthStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "BAD_REQUEST", "invalid month format, use YYYY-MM")
+		return
+	}
+
+	todoIDs := splitCSV(ids)
+	result, err := h.checkInStore.ListAllByMonth(todoIDs, t.Year(), t.Month())
+	if err != nil {
+		handleStoreError(w, err)
+		return
+	}
+	if result == nil {
+		result = map[string][]string{}
+	}
+	writeData(w, http.StatusOK, result)
+}
+
+// splitCSV splits a comma-separated string, filtering empty entries.
+func splitCSV(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // HabitStats GET /api/v1/habits/{id}/stats
