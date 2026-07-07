@@ -27,6 +27,7 @@ import { SubscriptionWidget } from "@/components/widgets/SubscriptionWidget";
 import { FundWidget } from "@/components/widgets/FundWidget";
 import { ServiceNav } from "@/components/services/ServiceNav";
 import { todoAPI, serviceAPI, rssAPI, bookmarkAPI } from "@/api/admin";
+import { checkInAPI } from "@/api/checkin";
 import { Rss, Bookmark } from "lucide-react";
 
 export function HomePage() {
@@ -71,6 +72,13 @@ export function HomePage() {
     staleTime: 60 * 1000,
   });
 
+  // 首页习惯数据（用于 TodoWidget 展示待打卡习惯）
+  const { data: habits = [] } = useQuery({
+    queryKey: ["home", "habits"],
+    queryFn: checkInAPI.listHabits,
+    staleTime: 30 * 1000,
+  });
+
   // TodoWidget 点击切换完成（与 /plans、/admin/todos 共享失效）
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const toggleMut = useMutation({
@@ -84,6 +92,20 @@ export function HomePage() {
       qc.invalidateQueries({ queryKey: ["admin", "todos"] });
     },
     onSettled: () => setTogglingId(null),
+  });
+
+  // TodoWidget 习惯打卡
+  const [checkingHabitId, setCheckingHabitId] = useState<string | null>(null);
+  const checkInMut = useMutation({
+    mutationFn: (id: string) => {
+      setCheckingHabitId(id);
+      return checkInAPI.createCheckIn(id);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["home", "habits"] });
+      qc.invalidateQueries({ queryKey: ["habits"] });
+    },
+    onSettled: () => setCheckingHabitId(null),
   });
 
   // Hero 摘要数字：全部从真实数据 derive，零硬编码
@@ -150,6 +172,9 @@ export function HomePage() {
           todos={todos}
           onToggle={(id) => toggleMut.mutate(id)}
           togglingId={togglingId}
+          habits={habits}
+          onHabitCheckIn={(id) => checkInMut.mutate(id)}
+          checkingHabitId={checkingHabitId}
         />
       ),
     },

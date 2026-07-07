@@ -19,6 +19,7 @@ import {
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientText } from "@/components/ui/GradientText";
 import { HabitCard } from "@/components/checkin/HabitCard";
+import { HabitDetailPanel } from "@/components/checkin/HabitDetailPanel";
 import { CalendarHeatmap } from "@/components/checkin/CalendarHeatmap";
 import { StatsCards } from "@/components/checkin/StatsCards";
 import { todoAPI } from "@/api/admin";
@@ -64,6 +65,7 @@ export function PlansPage() {
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
   const [checkingId, setCheckingId] = useState<string | null>(null);
+  const [detailHabitId, setDetailHabitId] = useState<string | null>(null);
 
   // Section 折叠状态
   const [checkinExpanded, setCheckinExpanded] = useState(true);
@@ -377,6 +379,14 @@ export function PlansPage() {
         </div>
       )}
 
+      {/* ===== 习惯详情弹窗 ===== */}
+      {detailHabitId && (
+        <HabitDetailPanel
+          habit={habits.find((h) => h.id === detailHabitId) ?? habits[0]}
+          onClose={() => setDetailHabitId(null)}
+        />
+      )}
+
       {/* ===== 习惯模块（有习惯时才显示） ===== */}
       {!habitsLoading && habits.length > 0 && (
         <div className="space-y-6">
@@ -400,12 +410,25 @@ export function PlansPage() {
                 </p>
               ) : (
                 [...uncheckedHabits, ...checkedHabits].map((habit) => (
-                  <HabitCard
+                  <div
                     key={habit.id}
-                    habit={habit}
-                    onCheckIn={(id) => checkInMut.mutate(id)}
-                    isPending={checkingId === habit.id}
-                  />
+                    className="relative"
+                  >
+                    <HabitCard
+                      habit={habit}
+                      onCheckIn={(id) => checkInMut.mutate(id)}
+                      isPending={checkingId === habit.id}
+                    />
+                    {habit.today_checked && (
+                      <button
+                        onClick={() => setDetailHabitId(habit.id)}
+                        className="absolute right-14 top-1/2 -translate-y-1/2 text-xs underline-offset-1 hover:underline"
+                        style={{ color: "var(--text-muted)", fontSize: 10 }}
+                      >
+                        详情
+                      </button>
+                    )}
+                  </div>
                 ))
               )}
             </div>
@@ -424,7 +447,11 @@ export function PlansPage() {
             {/* 完成率环形图 + 各习惯状态 */}
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <CompletionRing rate={completionRate} habits={habits} statsMap={habitStatsMap ?? {}} />
-              <HabitStatusList habits={habits} statsMap={habitStatsMap ?? {}} />
+              <HabitStatusList
+              habits={habits}
+              statsMap={habitStatsMap ?? {}}
+              onHabitClick={(id) => setDetailHabitId(id)}
+            />
             </div>
           </CollapsibleSection>
 
@@ -779,20 +806,26 @@ function CompletionRing({
 function HabitStatusList({
   habits,
   statsMap,
+  onHabitClick,
 }: {
   habits: Habit[];
   statsMap: Record<string, HabitStats>;
+  onHabitClick?: (id: string) => void;
 }) {
   return (
     <GlassCard interactive={false} className="!p-4">
       <div className="text-xs font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
         各习惯状态
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1">
         {habits.map((h) => {
           const stats = statsMap[h.id];
           return (
-            <div key={h.id} className="flex items-center gap-2">
+            <button
+              key={h.id}
+              onClick={() => onHabitClick?.(h.id)}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-[var(--bg-card-hover)]"
+            >
               <span
                 className="h-2 w-2 rounded-full shrink-0"
                 style={{
@@ -808,7 +841,7 @@ function HabitStatusList({
               <span className="flex items-center gap-0.5 text-xs" style={{ color: "#f97316" }}>
                 {stats?.current_streak ?? 0}天
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
