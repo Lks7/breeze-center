@@ -212,6 +212,7 @@ func main() {
 				// 待办
 				todoH := handler.NewTodoHandler(todoStore)
 				r.Get("/todos", todoH.List)
+				r.Get("/todos/completed-dates", todoH.ListCompletedDates)
 				r.Post("/todos", todoH.Create)
 				r.Put("/todos/{id}", todoH.Update)
 				r.Patch("/todos/{id}/toggle", todoH.ToggleDone)

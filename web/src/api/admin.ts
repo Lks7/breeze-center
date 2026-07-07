@@ -53,6 +53,8 @@ export const todoAPI = {
   ...collection<Todo>("todos"),
   toggle: (id: string) =>
     api.patch<Todo>(`/admin/todos/${id}/toggle`),
+  listCompletedDates: (month: string) =>
+    api.get<string[]>(`/admin/todos/completed-dates?month=${month}`),
 };
 export const serviceAPI = collection<ServiceEntry>("services");
 

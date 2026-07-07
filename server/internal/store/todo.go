@@ -21,6 +21,7 @@ type Todo struct {
 	HabitTarget    int    `json:"habit_target"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
+	CompletedAt    string `json:"completed_at"` // ISO8601 完成时间
 }
 
 // TodoStore 管理待办。
@@ -34,7 +35,7 @@ func (s *TodoStore) List() ([]Todo, error) {
 	rows, err := s.db.Query(`
 		SELECT id, text, done, priority, due_date, sort_order,
 		       is_habit, habit_frequency, habit_target,
-		       created_at, updated_at
+		       created_at, updated_at, completed_at
 		FROM todos WHERE deleted_at='' ORDER BY done ASC, sort_order ASC, created_at DESC`)
 	if err != nil {
 		return nil, err
@@ -46,7 +47,7 @@ func (s *TodoStore) List() ([]Todo, error) {
 		var done, isHabit int
 		if err := rows.Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder,
 			&isHabit, &t.HabitFrequency, &t.HabitTarget,
-			&t.CreatedAt, &t.UpdatedAt); err != nil {
+			&t.CreatedAt, &t.UpdatedAt, &t.CompletedAt); err != nil {
 			return nil, err
 		}
 		t.Done = done == 1
@@ -61,7 +62,7 @@ func (s *TodoStore) ListHabits() ([]Todo, error) {
 	rows, err := s.db.Query(`
 		SELECT id, text, done, priority, due_date, sort_order,
 		       is_habit, habit_frequency, habit_target,
-		       created_at, updated_at
+		       created_at, updated_at, completed_at
 		FROM todos WHERE deleted_at='' AND is_habit=1
 		ORDER BY sort_order ASC, created_at DESC`)
 	if err != nil {
@@ -74,7 +75,7 @@ func (s *TodoStore) ListHabits() ([]Todo, error) {
 		var done, isHabit int
 		if err := rows.Scan(&t.ID, &t.Text, &done, &t.Priority, &t.DueDate, &t.SortOrder,
 			&isHabit, &t.HabitFrequency, &t.HabitTarget,
-			&t.CreatedAt, &t.UpdatedAt); err != nil {
+			&t.CreatedAt, &t.UpdatedAt, &t.CompletedAt); err != nil {
 			return nil, err
 		}
 		t.Done = done == 1
@@ -187,7 +188,13 @@ func (s *TodoStore) GetByID(id string) (*Todo, error) {
 
 // ToggleDone 快速切换完成状态。
 func (s *TodoStore) ToggleDone(id string) (*Todo, error) {
-	_, err := s.db.Exec(`UPDATE todos SET done = 1 - done, updated_at=? WHERE id=? AND deleted_at=''`, now(), id)
+	// done: 0→1 设置 completed_at，1→0 清空 completed_at
+	_, err := s.db.Exec(`
+		UPDATE todos SET 
+		  done = 1 - done,
+		  completed_at = CASE WHEN done = 0 THEN ? ELSE '' END,
+		  updated_at = ?
+		WHERE id = ? AND deleted_at = ''`, now(), now(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -198,4 +205,28 @@ func (s *TodoStore) ToggleDone(id string) (*Todo, error) {
 func (s *TodoStore) Delete(id string) error {
 	_, err := s.db.Exec(`UPDATE todos SET deleted_at=?, updated_at=? WHERE id=?`, now(), now(), id)
 	return err
+}
+
+// ListCompletedDatesByMonth 返回指定月份完成的待办日期列表（去重）
+func (s *TodoStore) ListCompletedDatesByMonth(month string) ([]string, error) {
+	rows, err := s.db.Query(`
+		SELECT DISTINCT substr(completed_at, 1, 10) as date
+		FROM todos
+		WHERE deleted_at = ''
+		  AND completed_at != ''
+		  AND substr(completed_at, 1, 7) = ?
+		ORDER BY date`, month)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var dates []string
+	for rows.Next() {
+		var date string
+		if err := rows.Scan(&date); err != nil {
+			return nil, err
+		}
+		dates = append(dates, date)
+	}
+	return dates, rows.Err()
 }

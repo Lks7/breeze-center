@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS todos (
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
+    completed_at TEXT NOT NULL DEFAULT '',        -- 完成时间
     deleted_at TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_todos_done ON todos(done);
@@ -209,18 +210,24 @@ func migrate(db *sql.DB) error {
 	if _, err := db.Exec(schemaSQL); err != nil {
 		return err
 	}
-	// 增量迁移：为已存在的表补列（CREATE TABLE IF NOT EXISTS 不会改已有表结构）
-	_, err := db.Exec(`
-ALTER TABLE fund_holdings ADD COLUMN target_profit_rate REAL NOT NULL DEFAULT 0;
-ALTER TABLE fund_holdings ADD COLUMN stop_loss_rate REAL NOT NULL DEFAULT 0;
-ALTER TABLE fund_holdings ADD COLUMN alert_triggered INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE todos ADD COLUMN is_habit INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE todos ADD COLUMN habit_frequency TEXT NOT NULL DEFAULT '';
-ALTER TABLE todos ADD COLUMN habit_target INTEGER NOT NULL DEFAULT 0;
-`)
-	// ALTER TABLE ADD COLUMN 在列已存在时会报错，忽略这个特定错误
-	if err != nil && !isDuplicateColumnErr(err) {
-		return err
+	// 增量迁移：为已存在的表补列（CREATE TABLE IF NOT EXISTS 不会改已有表结构）。
+	// 每条 ALTER 单独执行——SQLite 在多语句 Exec 中遇到第一条失败会中断后续语句，
+	// 因此一旦前面的 ALTER 因“列已存在”而失败（fund_holdings 的列已在 CREATE TABLE 中定义），
+	// 后面的 ALTER（如 todos 的习惯列）就永远不会执行，导致插入报错 500。
+	alterStmts := []string{
+		`ALTER TABLE fund_holdings ADD COLUMN target_profit_rate REAL NOT NULL DEFAULT 0`,
+		`ALTER TABLE fund_holdings ADD COLUMN stop_loss_rate REAL NOT NULL DEFAULT 0`,
+		`ALTER TABLE fund_holdings ADD COLUMN alert_triggered INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE todos ADD COLUMN is_habit INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE todos ADD COLUMN habit_frequency TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE todos ADD COLUMN habit_target INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE todos ADD COLUMN completed_at TEXT NOT NULL DEFAULT ''`,
+	}
+	for _, stmt := range alterStmts {
+		// ALTER TABLE ADD COLUMN 在列已存在时会报错，忽略这个特定错误
+		if _, err := db.Exec(stmt); err != nil && !isDuplicateColumnErr(err) {
+			return err
+		}
 	}
 	return nil
 }

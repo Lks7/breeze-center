@@ -39,7 +39,6 @@ const NAV_ITEMS = [
   { to: "/fusion", label: "融合站点", icon: Layers },
   { to: "/rss", label: "RSS 订阅", icon: Rss },
   { to: "/plans", label: "目标管理", icon: CheckSquare },
-  { to: "/check-in", label: "打卡", icon: CalendarCheck },
   { to: "/bookmarks", label: "书签", icon: Bookmark },
   { to: "/notifications", label: "通知中心", icon: Bell },
   { to: "/github", label: "GitHub", icon: Github },

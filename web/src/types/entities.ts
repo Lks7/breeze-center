@@ -63,6 +63,7 @@ export interface Todo {
   habit_target: number;
   created_at: string;
   updated_at: string;
+  completed_at: string;
 }
 
 export interface Habit extends Todo {

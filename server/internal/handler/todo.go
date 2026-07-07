@@ -73,3 +73,18 @@ func (h *TodoHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	writeData(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
+
+// ListCompletedDates GET /api/v1/todos/completed-dates?month=YYYY-MM
+func (h *TodoHandler) ListCompletedDates(w http.ResponseWriter, r *http.Request) {
+	month := r.URL.Query().Get("month")
+	if month == "" {
+		http.Error(w, "month parameter required", http.StatusBadRequest)
+		return
+	}
+	dates, err := h.store.ListCompletedDatesByMonth(month)
+	if err != nil {
+		handleStoreError(w, err)
+		return
+	}
+	writeData(w, http.StatusOK, dates)
+}
