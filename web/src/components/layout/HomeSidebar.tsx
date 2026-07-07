@@ -20,6 +20,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Flame,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -37,7 +38,14 @@ const NAV_ITEMS = [
   { to: "/services", label: "快捷导航", icon: Server },
   { to: "/fusion", label: "融合站点", icon: Layers },
   { to: "/rss", label: "RSS 订阅", icon: Rss },
-  { to: "/plans", label: "目标管理", icon: CheckSquare },
+  {
+    label: "目标管理",
+    icon: CheckSquare,
+    children: [
+      { to: "/plans", label: "待办", icon: CheckSquare },
+      { to: "/habits", label: "习惯", icon: Flame },
+    ],
+  },
   { to: "/bookmarks", label: "书签", icon: Bookmark },
   { to: "/notifications", label: "通知中心", icon: Bell },
   { to: "/github", label: "GitHub", icon: Github },
@@ -58,10 +66,23 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(["目标管理"]));
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
+  };
+
+  const toggleExpand = (label: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
   };
 
   const w = collapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W;
@@ -104,6 +125,100 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
         <nav className="flex-1 space-y-0.5 px-2 pt-3 pb-1 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
+            
+            // 父菜单项（有子菜单）
+            if ('children' in item && item.children) {
+              const isExpanded = expandedItems.has(item.label);
+              const hasActiveChild = item.children.some((child) => isActive(child.to));
+              
+              return (
+                <div key={item.label}>
+                  {/* 父项 */}
+                  <button
+                    onClick={() => toggleExpand(item.label)}
+                    className={`flex w-full items-center gap-3 rounded-lg px-2 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] ${
+                      collapsed ? "justify-center" : ""
+                    }`}
+                    style={{
+                      background: hasActiveChild
+                        ? "color-mix(in srgb, var(--accent-primary) 15%, transparent)"
+                        : "transparent",
+                    }}
+                    title={item.label}
+                  >
+                    <Icon
+                      size={18}
+                      className="shrink-0"
+                      style={{
+                        color: hasActiveChild ? "var(--accent-primary)" : "var(--text-secondary)",
+                      }}
+                    />
+                    {!collapsed && (
+                      <>
+                        <span
+                          className="text-sm truncate whitespace-nowrap overflow-hidden flex-1 text-left"
+                          style={{
+                            color: hasActiveChild ? "var(--accent-primary)" : "var(--text-secondary)",
+                          }}
+                        >
+                          {item.label}
+                        </span>
+                        <ChevronRight
+                          size={14}
+                          className="shrink-0 transition-transform"
+                          style={{
+                            transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                            color: "var(--text-muted)",
+                          }}
+                        />
+                      </>
+                    )}
+                  </button>
+                  
+                  {/* 子项（展开时显示） */}
+                  {!collapsed && isExpanded && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {item.children.map((child) => {
+                        const ChildIcon = child.icon;
+                        const childActive = isActive(child.to);
+                        return (
+                          <NavLink
+                            key={child.to}
+                            to={child.to}
+                            onClick={() => setMobileOpen(false)}
+                            className="flex items-center gap-2 rounded-lg px-2 py-2 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)]"
+                            style={{
+                              background: childActive
+                                ? "color-mix(in srgb, var(--accent-primary) 12%, transparent)"
+                                : "transparent",
+                            }}
+                            title={child.label}
+                          >
+                            <ChildIcon
+                              size={16}
+                              className="shrink-0"
+                              style={{
+                                color: childActive ? "var(--accent-primary)" : "var(--text-muted)",
+                              }}
+                            />
+                            <span
+                              className="text-xs truncate whitespace-nowrap overflow-hidden"
+                              style={{
+                                color: childActive ? "var(--accent-primary)" : "var(--text-secondary)",
+                              }}
+                            >
+                              {child.label}
+                            </span>
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            
+            // 普通菜单项（无子菜单）
             const active = isActive(item.to);
             return (
               <NavLink

@@ -9,7 +9,7 @@ import { RSSPage } from "@/pages/RSSPage";
 import { FilesPage } from "@/pages/FilesPage";
 import { GitHubPage } from "@/pages/GitHubPage";
 import { FusionPage } from "@/pages/FusionPage";
-import { CheckInPage } from "@/pages/CheckInPage";
+import { HabitsPage } from "@/pages/HabitsPage";
 import { BookmarksPage } from "@/pages/BookmarksPage";
 import { FundPage } from "@/pages/FundPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
@@ -31,12 +31,13 @@ function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<ErrorBoundary name="首页"><HomePage /></ErrorBoundary>} />
           <Route path="/plans" element={<PlansPage />} />
+          <Route path="/habits" element={<HabitsPage />} />
+          <Route path="/check-in" element={<Navigate to="/habits" replace />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/rss" element={<RSSPage />} />
           <Route path="/files" element={<FilesPage />} />
           <Route path="/github" element={<GitHubPage />} />
-          <Route path="/check-in" element={<CheckInPage />} />
           <Route path="/fusion" element={<FusionPage />} />
           <Route path="/bookmarks" element={<BookmarksPage />} />
           <Route path="/fund" element={<ErrorBoundary name="基金盈亏"><FundPage /></ErrorBoundary>} />

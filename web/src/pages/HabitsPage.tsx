@@ -11,12 +11,12 @@ import { checkInAPI } from "@/api/checkin";
 import type { HabitStats } from "@/types/entities";
 
 /**
- * CheckInPage - 习惯打卡快捷页
+ * HabitsPage - 习惯打卡快捷页
  *
  * 核心打卡功能已整合到 /plans（目标管理中心）。
  * 此页面保留为专注的打卡入口，方便快速操作。
  */
-export function CheckInPage() {
+export function HabitsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const today = new Date();
