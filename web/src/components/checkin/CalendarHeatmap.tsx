@@ -1,9 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import gsap from "gsap";
 
 interface CalendarHeatmapProps {
   /** checkedDates: 选中月份内的已打卡日期 (YYYY-MM-DD 格式) */
   checkedDates: string[];
+  /** failedDates: 选中月份内的失败打卡日期 (YYYY-MM-DD 格式) */
+  failedDates?: string[];
   /** completedTodoDates: 选中月份内待办完成日期 (YYYY-MM-DD 格式) */
   completedTodoDates?: string[];
   /** year, month: 当前展示的年月（1-based month） */
@@ -15,14 +18,24 @@ interface CalendarHeatmapProps {
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
-/** 根据打卡次数决定颜色深浅（此处简化：打卡=深色，未打卡=浅色） */
-function getIntensity(checked: boolean): string {
-  if (!checked) return "var(--bg-card)";
-  return "var(--accent-primary)";
+/** 根据状态返回格子颜色配置 */
+function getCellColor(isChecked: boolean, isFailed: boolean, isToday: boolean): { bg: string; text: string; border: string } {
+  if (isChecked) {
+    return { bg: "var(--status-ok)", text: "#fff", border: isToday ? "#22c55e" : "transparent" };
+  }
+  if (isFailed) {
+    return { bg: "#ef4444", text: "#fff", border: isToday ? "#ef4444" : "transparent" };
+  }
+  return {
+    bg: "var(--bg-card)",
+    text: "var(--text-muted)",
+    border: isToday ? "var(--accent-secondary)" : "var(--border-card)",
+  };
 }
 
 export function CalendarHeatmap({
   checkedDates,
+  failedDates = [],
   completedTodoDates = [],
   year,
   month,
@@ -33,6 +46,7 @@ export function CalendarHeatmap({
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const checkedSet = useMemo(() => new Set(checkedDates), [checkedDates]);
+  const failedSet = useMemo(() => new Set(failedDates), [failedDates]);
   const todoCompletedSet = useMemo(() => new Set(completedTodoDates), [completedTodoDates]);
 
   // 计算该月所有日期格子
@@ -74,6 +88,16 @@ export function CalendarHeatmap({
     if (month === 12) onMonthChange(year + 1, 1);
     else onMonthChange(year, month + 1);
   };
+
+  const handleDateClick = useCallback((dateStr: string, target: HTMLElement) => {
+    // GSAP 弹跳动画
+    gsap.timeline()
+      .to(target, { scale: 0.85, duration: 0.1, ease: 'power2.in' })
+      .to(target, { scale: 1.15, duration: 0.2, ease: 'power2.out' })
+      .to(target, { scale: 1, duration: 0.2, ease: 'elastic.out(1, 0.5)' });
+
+    onDateClick?.(dateStr);
+  }, [onDateClick]);
 
   return (
     <div>
@@ -121,27 +145,30 @@ export function CalendarHeatmap({
               }
               const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
               const isChecked = checkedSet.has(dateStr);
+              const isFailed = failedSet.has(dateStr);
               const hasTodoCompleted = todoCompletedSet.has(dateStr);
               const isToday = dateStr === todayStr;
+
+              const { bg, text, border } = getCellColor(isChecked, isFailed, isToday);
+
+              // 构建 title
+              let title = dateStr;
+              if (isChecked) title += " ✓成功";
+              if (isFailed) title += " ✗失败";
+              if (hasTodoCompleted) title += " ✓待办";
 
               return (
                 <button
                   key={di}
-                  onClick={() => onDateClick?.(dateStr)}
-                  className="relative flex aspect-square items-center justify-center rounded-md text-xs font-mono transition hover:scale-110"
+                  onClick={(e) => handleDateClick(dateStr, e.currentTarget)}
+                  className="relative flex aspect-square items-center justify-center rounded-md text-xs font-mono hover:shadow-md"
                   style={{
-                    background: isChecked
-                      ? getIntensity(true)
-                      : "var(--bg-card)",
-                    color: isChecked
-                      ? "#fff"
-                      : "var(--text-muted)",
-                    border: isToday
-                      ? "2px solid var(--accent-secondary)"
-                      : "1px solid var(--border-card)",
-                    opacity: isChecked ? 1 : 0.6,
+                    background: bg,
+                    color: text,
+                    border: border,
+                    opacity: isChecked || isFailed ? 1 : 0.6,
                   }}
-                  title={dateStr + (isChecked ? " ✓习惯" : "") + (hasTodoCompleted ? " ✓待办" : "")}
+                  title={title}
                 >
                   {day}
                   {/* 待办完成指示器 - 底部小条 */}

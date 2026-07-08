@@ -9,9 +9,9 @@ export const checkInAPI = {
   /** 获取所有习惯目标（含今日打卡状态 + 连胜） */
   listHabits: () => api.get<Habit[]>("/habits"),
 
-  /** 创建打卡记录 */
-  createCheckIn: (todoId: string, checkDate?: string) =>
-    api.post<CheckIn>("/check-ins", { todo_id: todoId, check_date: checkDate }),
+  /** 创建打卡记录（status 可选，默认 "success"） */
+  createCheckIn: (todoId: string, checkDate?: string, status?: string) =>
+    api.post<CheckIn>("/check-ins", { todo_id: todoId, check_date: checkDate, status }),
 
   /** 删除打卡记录 */
   deleteCheckIn: (id: string) =>
@@ -25,9 +25,9 @@ export const checkInAPI = {
   listCheckIns: (todoId: string, month: string) =>
     api.get<string[]>(`/check-ins?todo_id=${todoId}&month=${month}`),
 
-  /** 批量获取多个习惯的某月打卡日期 */
+  /** 批量获取多个习惯的某月打卡日期（含状态） */
   batchListCheckIns: (todoIds: string[], month: string) =>
-    api.get<Record<string, string[]>>(`/check-ins/batch?todo_ids=${todoIds.join(",")}&month=${month}`),
+    api.get<Record<string, Record<string, string>>>(`/check-ins/batch?todo_ids=${todoIds.join(",")}&month=${month}`),
 
   /** 获取某个习惯的统计数据 */
   getStats: (habitId: string) =>

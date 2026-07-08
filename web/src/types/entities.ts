@@ -70,6 +70,7 @@ export interface Todo {
 
 export interface Habit extends Todo {
   today_checked: boolean;
+  today_status: string; // "success" | "failure" | ""
   streak: number;
 }
 
@@ -77,6 +78,7 @@ export interface CheckIn {
   id: string;
   todo_id: string;
   check_date: string;
+  status: string; // "success" | "failure"
   created_at: string;
 }
 

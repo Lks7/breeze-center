@@ -35,8 +35,9 @@ func (h *CheckInHandler) Register(r chi.Router) {
 // HabitWithCheckIn 习惯目标 + 今日打卡状态 + 连胜。
 type HabitWithCheckIn struct {
 	store.Todo
-	TodayChecked bool `json:"today_checked"`
-	Streak       int  `json:"streak"`
+	TodayChecked bool   `json:"today_checked"`
+	TodayStatus  string `json:"today_status"` // "success" | "failure" | ""
+	Streak       int    `json:"streak"`
 }
 
 // ListHabits GET /api/v1/habits
@@ -52,12 +53,13 @@ func (h *CheckInHandler) ListHabits(w http.ResponseWriter, r *http.Request) {
 
 	result := make([]HabitWithCheckIn, len(habits))
 	for i, hab := range habits {
-		checked, _ := h.checkInStore.CheckToday(hab.ID)
+		checked, status, _ := h.checkInStore.CheckToday(hab.ID)
 		dates, _ := h.checkInStore.GetAllDates(hab.ID)
 		streak := store.CalcCurrentStreak(dates)
 		result[i] = HabitWithCheckIn{
 			Todo:         hab,
 			TodayChecked: checked,
+			TodayStatus:  status,
 			Streak:       streak,
 		}
 	}
@@ -69,6 +71,7 @@ func (h *CheckInHandler) CreateCheckIn(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		TodoID    string `json:"todo_id"`
 		CheckDate string `json:"check_date"` // 可选，默认今天
+		Status    string `json:"status"`    // 可选，默认 "success"
 	}
 	if !decodeJSON(w, r, &in) {
 		return
@@ -81,6 +84,10 @@ func (h *CheckInHandler) CreateCheckIn(w http.ResponseWriter, r *http.Request) {
 	if date == "" {
 		date = time.Now().Format("2006-01-02")
 	}
+	status := in.Status
+	if status == "" {
+		status = "success"
+	}
 	// 验证待办存在
 	todo, err := h.todoStore.GetByID(in.TodoID)
 	if err != nil {
@@ -92,17 +99,8 @@ func (h *CheckInHandler) CreateCheckIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 检查是否已打卡
-	existing, err := h.checkInStore.GetByDate(in.TodoID, date)
-	if err != nil {
-		handleStoreError(w, err)
-		return
-	}
-	if existing != nil {
-		writeError(w, http.StatusConflict, "DUPLICATE", "already checked in for this date")
-		return
-	}
-	c, err := h.checkInStore.Create(in.TodoID, date)
+	// Create 内部会自动处理：已有记录则更新 status，没有则新建
+	c, err := h.checkInStore.Create(in.TodoID, date, status)
 	if err != nil {
 		handleStoreError(w, err)
 		return
@@ -186,7 +184,7 @@ func (h *CheckInHandler) BatchListCheckIns(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if result == nil {
-		result = map[string][]string{}
+		result = map[string]map[string]string{}
 	}
 	writeData(w, http.StatusOK, result)
 }

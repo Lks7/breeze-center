@@ -1,13 +1,14 @@
 import { useState, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Flame, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Flame, Sparkles, Plus } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientText } from "@/components/ui/GradientText";
 import { HabitCard } from "@/components/checkin/HabitCard";
 import { CalendarHeatmap } from "@/components/checkin/CalendarHeatmap";
 import { StatsCards } from "@/components/checkin/StatsCards";
 import { checkInAPI } from "@/api/checkin";
+import { todoAPI } from "@/api/admin";
 import type { HabitStats } from "@/types/entities";
 
 /**
@@ -23,6 +24,11 @@ export function HabitsPage() {
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1);
   const [checkingId, setCheckingId] = useState<string | null>(null);
+
+  // 表单状态
+  const [habitName, setHabitName] = useState("");
+  const [habitFreq, setHabitFreq] = useState("daily");
+  const [habitTarget, setHabitTarget] = useState(1);
 
   const { data: habits = [], isLoading } = useQuery({
     queryKey: ["habits", "checkin-page"],
@@ -58,7 +64,39 @@ export function HabitsPage() {
   });
 
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
-  const selectedDates = selectedHabitId ? calendarData[selectedHabitId] ?? [] : [];
+
+  // 从 calendarData 中提取成功和失败的日期
+  const selectedDates = useMemo(() => {
+    if (selectedHabitId) {
+      return Object.entries(calendarData[selectedHabitId] ?? {})
+        .filter(([_, status]) => status === "success")
+        .map(([date]) => date);
+    }
+    // 全部习惯：聚合所有习惯的成功日期
+    const dates = new Set<string>();
+    Object.values(calendarData).forEach((habitData) => {
+      Object.entries(habitData).forEach(([date, status]) => {
+        if (status === "success") dates.add(date);
+      });
+    });
+    return Array.from(dates);
+  }, [selectedHabitId, calendarData]);
+
+  const failedDates = useMemo(() => {
+    if (selectedHabitId) {
+      return Object.entries(calendarData[selectedHabitId] ?? {})
+        .filter(([_, status]) => status === "failure")
+        .map(([date]) => date);
+    }
+    // 全部习惯：聚合所有习惯的失败日期
+    const dates = new Set<string>();
+    Object.values(calendarData).forEach((habitData) => {
+      Object.entries(habitData).forEach(([date, status]) => {
+        if (status === "failure") dates.add(date);
+      });
+    });
+    return Array.from(dates);
+  }, [selectedHabitId, calendarData]);
 
   const aggStats = useMemo(() => {
     if (!habitStatsMap) return null;
@@ -90,6 +128,15 @@ export function HabitsPage() {
     onSettled: () => setCheckingId(null),
   });
 
+  const checkInFailMut = useMutation({
+    mutationFn: async (todoId: string) => {
+      setCheckingId(todoId);
+      return checkInAPI.createCheckIn(todoId, undefined, "failure");
+    },
+    onSuccess: () => invalidateAll(),
+    onSettled: () => setCheckingId(null),
+  });
+
   const checkInDateMut = useMutation({
     mutationFn: async ({ todoId, date }: { todoId: string; date: string }) => {
       setCheckingId(todoId);
@@ -108,14 +155,33 @@ export function HabitsPage() {
     onSettled: () => setCheckingId(null),
   });
 
+  // 创建习惯
+  const createHabitMut = useMutation({
+    mutationFn: async () => {
+      return todoAPI.create({
+        text: habitName,
+        is_habit: true,
+        habit_frequency: habitFreq,
+        habit_target: habitTarget,
+        priority: "medium",
+      });
+    },
+    onSuccess: () => {
+      setHabitName("");
+      setHabitFreq("daily");
+      setHabitTarget(1);
+      invalidateAll();
+    },
+  });
+
   const uncheckedHabits = habits.filter((h) => !h.today_checked);
   const checkedHabits = habits.filter((h) => h.today_checked);
 
   const handleDateClick = useCallback(
     (date: string) => {
       if (!selectedHabitId) return;
-      const checkedDates = calendarData[selectedHabitId] ?? [];
-      if (checkedDates.includes(date)) {
+      const dateStatusMap = calendarData[selectedHabitId] ?? {};
+      if (date in dateStatusMap) {
         uncheckMut.mutate({ todoId: selectedHabitId, date });
       } else {
         checkInDateMut.mutate({ todoId: selectedHabitId, date });
@@ -123,6 +189,12 @@ export function HabitsPage() {
     },
     [selectedHabitId, calendarData, checkInDateMut, uncheckMut]
   );
+
+  const handleCreateHabit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!habitName.trim()) return;
+    createHabitMut.mutate();
+  };
 
   return (
     <div className="mx-auto w-full max-w-4xl px-6 py-6">
@@ -159,20 +231,101 @@ export function HabitsPage() {
             还没有习惯目标
           </p>
           <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            前往{" "}
-            <Link
-              to="/plans"
-              className="underline"
-              style={{ color: "var(--accent-primary)" }}
-            >
-              目标管理中心
-            </Link>{" "}
-            创建待办时勾选「习惯」即可开始
+            在下方创建你的第一个习惯吧
           </p>
         </GlassCard>
-      ) : (
-        <div className="space-y-6">
-          {/* 今日打卡 */}
+      ) : null}
+
+      <div className="space-y-6">
+        {/* 添加习惯表单 */}
+        <GlassCard interactive={false}>
+          <form onSubmit={handleCreateHabit} className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[200px]">
+              <label
+                className="mb-1 block text-xs"
+                style={{ color: "var(--text-muted)" }}
+              >
+                习惯名称
+              </label>
+              <input
+                type="text"
+                value={habitName}
+                onChange={(e) => setHabitName(e.target.value)}
+                placeholder="例如：晨跑 30 分钟"
+                className="w-full rounded-xl px-3 py-2 text-sm outline-none transition"
+                style={{
+                  background: "var(--bg-card)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-card)",
+                }}
+              />
+            </div>
+
+            <div>
+              <label
+                className="mb-1 block text-xs"
+                style={{ color: "var(--text-muted)" }}
+              >
+                频率
+              </label>
+              <select
+                value={habitFreq}
+                onChange={(e) => setHabitFreq(e.target.value)}
+                className="rounded-xl px-3 py-2 text-sm outline-none transition"
+                style={{
+                  background: "var(--bg-card)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-card)",
+                }}
+              >
+                <option value="daily">每天</option>
+                <option value="weekly">每周</option>
+                <option value="monthly">每月</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                className="mb-1 block text-xs"
+                style={{ color: "var(--text-muted)" }}
+              >
+                目标次数
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={habitTarget}
+                onChange={(e) => setHabitTarget(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-20 rounded-xl px-3 py-2 text-sm outline-none transition"
+                style={{
+                  background: "var(--bg-card)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-card)",
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={!habitName.trim() || createHabitMut.isPending}
+              className="flex items-center gap-1.5 rounded-xl px-5 py-2 text-sm font-semibold text-white transition hover:shadow-lg disabled:opacity-50"
+              style={{
+                background: "var(--accent-gradient)",
+                cursor: !habitName.trim() || createHabitMut.isPending ? "default" : "pointer",
+              }}
+            >
+              {createHabitMut.isPending ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Plus size={14} />
+              )}
+              添加习惯
+            </button>
+          </form>
+        </GlassCard>
+
+        {/* 今日打卡 */}
+        {habits.length > 0 && (
           <section>
             <h2 className="mb-3 flex items-center gap-2 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
               <Flame size={14} style={{ color: "#f97316" }} />
@@ -189,13 +342,16 @@ export function HabitsPage() {
                   key={habit.id}
                   habit={habit}
                   onCheckIn={(id) => checkInMut.mutate(id)}
+                  onCheckInFail={(id) => checkInFailMut.mutate(id)}
                   isPending={checkingId === habit.id}
                 />
               ))}
             </div>
           </section>
+        )}
 
-          {/* 日历 */}
+        {/* 日历 */}
+        {habits.length > 0 && (
           <section>
             <h2 className="mb-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
               打卡日历
@@ -230,6 +386,7 @@ export function HabitsPage() {
               )}
               <CalendarHeatmap
                 checkedDates={selectedDates}
+                failedDates={failedDates}
                 year={calendarYear}
                 month={calendarMonth}
                 onMonthChange={(y, m) => {
@@ -245,18 +402,18 @@ export function HabitsPage() {
               )}
             </GlassCard>
           </section>
+        )}
 
-          {/* 统计 */}
-          {aggStats && (
-            <section>
-              <h2 className="mb-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
-                数据统计
-              </h2>
-              <StatsCards {...aggStats} />
-            </section>
-          )}
-        </div>
-      )}
+        {/* 统计 */}
+        {aggStats && (
+          <section>
+            <h2 className="mb-3 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+              数据统计
+            </h2>
+            <StatsCards {...aggStats} />
+          </section>
+        )}
+      </div>
     </div>
   );
 }

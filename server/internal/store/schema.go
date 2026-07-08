@@ -226,6 +226,7 @@ func migrate(db *sql.DB) error {
 		`ALTER TABLE todos ADD COLUMN completed_at TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE todos ADD COLUMN position_x INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE todos ADD COLUMN position_y INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE check_ins ADD COLUMN status TEXT NOT NULL DEFAULT 'success'`,
 	}
 	for _, stmt := range alterStmts {
 		// ALTER TABLE ADD COLUMN 在列已存在时会报错，忽略这个特定错误
