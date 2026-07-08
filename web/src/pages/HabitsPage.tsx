@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Flame, Sparkles, Plus } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientText } from "@/components/ui/GradientText";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { HabitCard } from "@/components/checkin/HabitCard";
 import { CalendarHeatmap } from "@/components/checkin/CalendarHeatmap";
 import { StatsCards } from "@/components/checkin/StatsCards";
@@ -19,11 +20,11 @@ import type { HabitStats } from "@/types/entities";
  */
 export function HabitsPage() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const today = new Date();
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1);
   const [checkingId, setCheckingId] = useState<string | null>(null);
+  const [deleteHabitId, setDeleteHabitId] = useState<string | null>(null);
 
   // 表单状态
   const [habitName, setHabitName] = useState("");
@@ -156,6 +157,17 @@ export function HabitsPage() {
   });
 
   // 创建习惯
+  // 删除习惯
+  const deleteHabitMut = useMutation({
+    mutationFn: async (id: string) => {
+      return todoAPI.delete(id);
+    },
+    onSuccess: () => {
+      setDeleteHabitId(null);
+      invalidateAll();
+    },
+  });
+
   const createHabitMut = useMutation({
     mutationFn: async () => {
       return todoAPI.create({
@@ -210,13 +222,6 @@ export function HabitsPage() {
         <h1 className="text-2xl font-semibold">
           <GradientText>习惯打卡</GradientText>
         </h1>
-        <button
-          onClick={() => navigate("/plans")}
-          className="btn-ghost ml-auto text-sm"
-          style={{ border: "1px solid var(--border-card)" }}
-        >
-          目标管理中心 →
-        </button>
       </div>
 
       {isLoading ? (
@@ -343,6 +348,7 @@ export function HabitsPage() {
                   habit={habit}
                   onCheckIn={(id) => checkInMut.mutate(id)}
                   onCheckInFail={(id) => checkInFailMut.mutate(id)}
+                  onDelete={(id) => setDeleteHabitId(id)}
                   isPending={checkingId === habit.id}
                 />
               ))}
@@ -414,6 +420,20 @@ export function HabitsPage() {
           </section>
         )}
       </div>
+
+      {/* 删除确认 */}
+      <ConfirmDialog
+        open={deleteHabitId !== null}
+        title="删除习惯"
+        message={`确定要删除「${habits.find((h) => h.id === deleteHabitId)?.text || ""}」吗？所有打卡记录将被一同删除。`}
+        confirmLabel="删除"
+        cancelLabel="取消"
+        variant="danger"
+        onConfirm={() => {
+          if (deleteHabitId) deleteHabitMut.mutate(deleteHabitId);
+        }}
+        onCancel={() => setDeleteHabitId(null)}
+      />
     </div>
   );
 }

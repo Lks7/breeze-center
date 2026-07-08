@@ -1,5 +1,5 @@
 import { useRef, useCallback } from "react";
-import { Check, X, Loader2, Flame, Target } from "lucide-react";
+import { Check, X, Loader2, Flame, Target, Trash2 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { useScaleBounce } from "@/hooks/useGSAPAnimation";
 import type { Habit } from "@/types/entities";
@@ -8,6 +8,7 @@ interface HabitCardProps {
   habit: Habit;
   onCheckIn: (todoId: string) => void;
   onCheckInFail?: (todoId: string) => void;
+  onDelete?: (todoId: string) => void;
   isPending?: boolean;
 }
 
@@ -17,7 +18,7 @@ const FREQ_LABELS: Record<string, string> = {
   monthly: "每月",
 };
 
-export function HabitCard({ habit, onCheckIn, onCheckInFail, isPending }: HabitCardProps) {
+export function HabitCard({ habit, onCheckIn, onCheckInFail, onDelete, isPending }: HabitCardProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerBounce = useScaleBounce(buttonRef);
@@ -161,6 +162,25 @@ export function HabitCard({ habit, onCheckIn, onCheckInFail, isPending }: HabitC
           btnText
         )}
       </button>
+
+      {/* 删除按钮 */}
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (clickTimerRef.current) {
+              clearTimeout(clickTimerRef.current);
+              clickTimerRef.current = null;
+            }
+            onDelete(habit.id);
+          }}
+          className="shrink-0 rounded-lg p-2 text-xs transition hover:bg-[var(--bg-card-hover)]"
+          style={{ color: "var(--text-muted)" }}
+          title="删除习惯"
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
     </GlassCard>
   );
 }
