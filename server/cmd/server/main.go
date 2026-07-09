@@ -188,25 +188,26 @@ func main() {
 				r.Patch("/rss/articles/{id}", rssH.MarkArticleRead)
 				r.Post("/rss/fetch", rssH.FetchNow) // 手动触发抓取
 
-			// 基金持仓
-			// v1.2: notifStore 用于止盈止损预警推送
-			fundH := handler.NewFundHandler(fundStore, notifStore)
-			r.Get("/fund/holdings", fundH.ListHoldings)
-			r.Post("/fund/holdings", fundH.CreateHolding)
-			r.Put("/fund/holdings/{id}", fundH.UpdateHolding)
-			r.Delete("/fund/holdings/{id}", fundH.DeleteHolding)
-			r.Post("/fund/update-navs", fundH.UpdateNavs)                       // 批量更新净值（写历史+预警）
-			r.Post("/fund/holdings/{id}/update-nav", fundH.UpdateOneNav)        // 单条更新净值
-			r.Get("/fund/holdings/{id}/history", fundH.GetHoldingHistory)       // 单只净值历史
-			r.Get("/fund/history", fundH.GetAllHistory)                         // 全部净值历史汇总
-			r.Get("/fund/summary", fundH.GetSummary)                            // 总盈亏统计
-			r.Get("/fund/daily-profit", fundH.GetDailyProfit)                     // 每日盈亏
+				// 基金持仓
+				// v1.2: notifStore 用于止盈止损预警推送
+				fundH := handler.NewFundHandler(fundStore, notifStore)
+				r.Get("/fund/holdings", fundH.ListHoldings)
+				r.Post("/fund/holdings", fundH.CreateHolding)
+				r.Put("/fund/holdings/{id}", fundH.UpdateHolding)
+				r.Delete("/fund/holdings/{id}", fundH.DeleteHolding)
+				r.Post("/fund/update-navs", fundH.UpdateNavs)                 // 批量更新净值（写历史+预警）
+				r.Post("/fund/holdings/{id}/update-nav", fundH.UpdateOneNav)  // 单条更新净值
+				r.Get("/fund/holdings/{id}/history", fundH.GetHoldingHistory) // 单只净值历史
+				r.Get("/fund/history", fundH.GetAllHistory)                   // 全部净值历史汇总
+				r.Get("/fund/summary", fundH.GetSummary)                      // 总盈亏统计
+				r.Get("/fund/daily-profit", fundH.GetDailyProfit)             // 每日盈亏
 
 				// 书签
 				bmH := handler.NewBookmarkHandler(bookmarkStore)
 				r.Get("/bookmarks", bmH.List)
 				r.Post("/bookmarks", bmH.Create)
 				r.Put("/bookmarks/{id}", bmH.Update)
+				r.Patch("/bookmarks/{id}/open", bmH.MarkOpened)
 				r.Delete("/bookmarks/{id}", bmH.Delete)
 
 				// 待办
@@ -287,7 +288,7 @@ func checkExpiringSubscriptions(subStore *store.SubscriptionStore, notifStore *s
 	for _, sub := range subs {
 		days := int(time.Until(parseDateOrZero(sub.ExpireDate)).Hours() / 24)
 		if days < 0 {
-			notifStore.Push("subscription", "订阅已过期", 
+			notifStore.Push("subscription", "订阅已过期",
 				fmt.Sprintf("%s 已过期", sub.Name))
 		} else if days <= sub.NotifyDays {
 			notifStore.Push("subscription", "订阅即将到期",

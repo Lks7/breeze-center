@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Breeze Bookmark Capture</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>书签收集</h1>
+        <span id="count">-</span>
+      </header>
+
+      <label>
+        后端地址
+        <input id="endpoint" type="text" autocomplete="off" />
+      </label>
+
+      <div class="grid">
+        <label>
+          分组
+          <input id="group" type="text" list="groupOptions" autocomplete="off" />
+          <datalist id="groupOptions"></datalist>
+        </label>
+        <label>
+          标签
+          <input id="tags" type="text" list="tagOptions" autocomplete="off" />
+          <datalist id="tagOptions"></datalist>
+        </label>
+      </div>
+
+      <section class="suggestions" aria-label="已有分组和标签">
+        <div>
+          <span>已有分组</span>
+          <div id="groupChips" class="chips"></div>
+        </div>
+        <div>
+          <span>已有标签</span>
+          <div id="tagChips" class="chips"></div>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button id="saveCurrent" type="button">保存当前页</button>
+        <button id="saveWindow" type="button" class="secondary">保存当前窗口</button>
+      </div>
+
+      <p id="status" role="status"></p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

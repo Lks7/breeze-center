@@ -55,6 +55,16 @@ func (h *BookmarkHandler) Update(w http.ResponseWriter, r *http.Request) {
 	writeData(w, http.StatusOK, b)
 }
 
+// MarkOpened PATCH /api/v1/admin/bookmarks/{id}/open
+func (h *BookmarkHandler) MarkOpened(w http.ResponseWriter, r *http.Request) {
+	b, err := h.store.MarkOpened(chi.URLParam(r, "id"))
+	if err != nil {
+		handleStoreError(w, err)
+		return
+	}
+	writeData(w, http.StatusOK, b)
+}
+
 // Delete DELETE /api/v1/admin/bookmarks/{id}
 func (h *BookmarkHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err := h.store.Delete(chi.URLParam(r, "id")); err != nil {

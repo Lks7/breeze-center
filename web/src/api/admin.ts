@@ -48,7 +48,11 @@ export const rssAPI = {
   },
 };
 
-export const bookmarkAPI = collection<Bookmark>("bookmarks");
+export const bookmarkAPI = {
+  ...collection<Bookmark>("bookmarks"),
+  markOpened: (id: string) =>
+    api.patch<Bookmark>(`/admin/bookmarks/${id}/open`),
+};
 export const todoAPI = {
   ...collection<Todo>("todos"),
   toggle: (id: string) =>

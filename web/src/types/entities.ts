@@ -44,9 +44,13 @@ export interface Bookmark {
   title: string;
   url: string;
   description: string;
+  summary: string;
   category: string;
+  tags: string;
+  thumbnail_url: string;
   icon: string;
   sort_order: number;
+  last_opened_at: string;
   created_at: string;
   updated_at: string;
 }

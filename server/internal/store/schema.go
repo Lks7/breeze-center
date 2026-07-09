@@ -61,9 +61,13 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     title       TEXT NOT NULL,
     url         TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
+    summary     TEXT NOT NULL DEFAULT '',
     category    TEXT NOT NULL DEFAULT 'general',
+    tags        TEXT NOT NULL DEFAULT '',
+    thumbnail_url TEXT NOT NULL DEFAULT '',
     icon        TEXT NOT NULL DEFAULT '',
     sort_order  INTEGER NOT NULL DEFAULT 0,
+    last_opened_at TEXT NOT NULL DEFAULT '',
     created_at  TEXT NOT NULL,
     updated_at  TEXT NOT NULL,
     deleted_at  TEXT NOT NULL DEFAULT ''
@@ -227,6 +231,10 @@ func migrate(db *sql.DB) error {
 		`ALTER TABLE todos ADD COLUMN position_x INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE todos ADD COLUMN position_y INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE check_ins ADD COLUMN status TEXT NOT NULL DEFAULT 'success'`,
+		`ALTER TABLE bookmarks ADD COLUMN tags TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE bookmarks ADD COLUMN last_opened_at TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE bookmarks ADD COLUMN summary TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE bookmarks ADD COLUMN thumbnail_url TEXT NOT NULL DEFAULT ''`,
 	}
 	for _, stmt := range alterStmts {
 		// ALTER TABLE ADD COLUMN 在列已存在时会报错，忽略这个特定错误
