@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import gsap from "gsap";
 import {
   Home,
   TrendingUp,
@@ -10,7 +11,6 @@ import {
   Bookmark,
   Bell,
   Github,
-  FileText,
   FolderOpen,
   Sun,
   Moon,
@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Flame,
+  CreditCard,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { to: "/services", label: "快捷导航", icon: Server },
   { to: "/fusion", label: "融合站点", icon: Layers },
   { to: "/rss", label: "RSS 订阅", icon: Rss },
+  { to: "/subscriptions", label: "订阅", icon: CreditCard },
   {
     label: "目标管理",
     icon: CheckSquare,
@@ -49,7 +51,6 @@ const NAV_ITEMS = [
   { to: "/bookmarks", label: "书签", icon: Bookmark },
   { to: "/notifications", label: "通知中心", icon: Bell },
   { to: "/github", label: "GitHub", icon: Github },
-  { to: "/blog", label: "博客", icon: FileText },
   { to: "/files", label: "文件中心", icon: FolderOpen },
 ];
 
@@ -67,6 +68,41 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(["目标管理"]));
+  
+  const sidebarRef = useRef<HTMLElement>(null);
+  const navItemsRef = useRef<HTMLDivElement>(null);
+  
+  // 侧边栏展开/收起动画
+  useEffect(() => {
+    if (!sidebarRef.current) return;
+    
+    const targetWidth = collapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W;
+    
+    gsap.to(sidebarRef.current, {
+      width: targetWidth,
+      duration: 0.4,
+      ease: 'power2.inOut',
+    });
+  }, [collapsed]);
+  
+  // 菜单项入场动画
+  useEffect(() => {
+    if (!navItemsRef.current) return;
+    
+    const items = navItemsRef.current.querySelectorAll('.nav-item');
+    
+    gsap.fromTo(
+      items,
+      { opacity: 0, x: -20 },
+      {
+        opacity: 1,
+        x: 0,
+        duration: 0.3,
+        stagger: 0.05,
+        ease: 'power2.out',
+      }
+    );
+  }, []);
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
@@ -74,6 +110,8 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
   };
 
   const toggleExpand = (label: string) => {
+    const isExpanding = !expandedItems.has(label);
+    
     setExpandedItems((prev) => {
       const next = new Set(prev);
       if (next.has(label)) {
@@ -83,6 +121,25 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
       }
       return next;
     });
+    
+    // 子菜单展开/收起动画
+    setTimeout(() => {
+      const childContainer = document.querySelector(`[data-parent="${label}"]`);
+      if (childContainer && isExpanding) {
+        const children = childContainer.querySelectorAll('.child-nav-item');
+        gsap.fromTo(
+          children,
+          { opacity: 0, x: -10 },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.2,
+            stagger: 0.05,
+            ease: 'power2.out',
+          }
+        );
+      }
+    }, 0);
   };
 
   const w = collapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_EXPANDED_W;
@@ -111,8 +168,9 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
 
       {/* 侧边栏 */}
       <aside
+        ref={sidebarRef}
         className={`
-          fixed inset-y-0 left-0 z-40 flex flex-col backdrop-blur-xl transition-all duration-300
+          fixed inset-y-0 left-0 z-40 flex flex-col backdrop-blur-xl
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
         style={{
@@ -122,7 +180,7 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
         }}
       >
         {/* 导航链接 — 首页显示在最顶层 */}
-        <nav className="flex-1 space-y-0.5 px-2 pt-3 pb-1 overflow-y-auto">
+        <nav ref={navItemsRef} className="flex-1 space-y-0.5 px-2 pt-3 pb-1 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             
@@ -132,7 +190,7 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
               const hasActiveChild = item.children.some((child) => isActive(child.to));
               
               return (
-                <div key={item.label}>
+                <div key={item.label} className="nav-item">
                   {/* 父项 */}
                   <button
                     onClick={() => toggleExpand(item.label)}
@@ -177,7 +235,7 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
                   
                   {/* 子项（展开时显示） */}
                   {!collapsed && isExpanded && (
-                    <div className="ml-4 mt-1 space-y-1">
+                    <div className="ml-4 mt-1 space-y-1" data-parent={item.label}>
                       {item.children.map((child) => {
                         const ChildIcon = child.icon;
                         const childActive = isActive(child.to);
@@ -186,7 +244,7 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
                             key={child.to}
                             to={child.to}
                             onClick={() => setMobileOpen(false)}
-                            className="flex items-center gap-2 rounded-lg px-2 py-2 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)]"
+                            className="child-nav-item flex items-center gap-2 rounded-lg px-2 py-2 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)]"
                             style={{
                               background: childActive
                                 ? "color-mix(in srgb, var(--accent-primary) 12%, transparent)"
@@ -225,7 +283,7 @@ export function HomeSidebar({ collapsed, onToggle }: HomeSidebarProps) {
                 key={item.to}
                 to={item.to}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-2 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] ${
+                className={`nav-item flex items-center gap-3 rounded-lg px-2 py-2.5 transition-all hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] ${
                   collapsed ? "justify-center" : ""
                 }`}
                 style={{

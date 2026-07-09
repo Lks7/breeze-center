@@ -13,6 +13,7 @@ import { HabitsPage } from "@/pages/HabitsPage";
 import { BookmarksPage } from "@/pages/BookmarksPage";
 import { FundPage } from "@/pages/FundPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
+import { SubscriptionsPage } from "@/pages/SubscriptionsPage";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
 import { RSSAdmin } from "@/pages/admin/RSSAdmin";
@@ -42,6 +43,7 @@ function App() {
           <Route path="/bookmarks" element={<BookmarksPage />} />
           <Route path="/fund" element={<ErrorBoundary name="基金盈亏"><FundPage /></ErrorBoundary>} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/subscriptions" element={<SubscriptionsPage />} />
         </Route>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="rss" replace />} />
