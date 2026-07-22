@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { Flame, CalendarCheck, BarChart3, Trophy } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import gsap from "gsap";
 
 interface StatsCardsProps {
   currentStreak: number;
@@ -8,6 +10,24 @@ interface StatsCardsProps {
   weekTarget: number;
   monthDone: number;
   monthTarget: number;
+}
+
+function AnimatedNumber({ value }: { value: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    const obj = { value: 0 };
+    gsap.to(obj, {
+      value,
+      duration: 1.5,
+      ease: "expo.out",
+      onUpdate: () => {
+        setDisplayValue(Math.floor(obj.value));
+      },
+    });
+  }, [value]);
+
+  return <>{displayValue}</>;
 }
 
 export function StatsCards({
@@ -21,25 +41,25 @@ export function StatsCards({
   const stats = [
     {
       label: "当前连胜",
-      value: `${currentStreak}天`,
+      value: <><AnimatedNumber value={currentStreak} />天</>,
       icon: <Flame size={18} style={{ color: "#f97316" }} />,
       color: "#f97316",
     },
     {
       label: "历史最长",
-      value: `${longestStreak}天`,
+      value: <><AnimatedNumber value={longestStreak} />天</>,
       icon: <Trophy size={18} style={{ color: "#fbbf24" }} />,
       color: "#fbbf24",
     },
     {
       label: "本周完成",
-      value: `${weekDone}/${weekTarget > 0 ? weekTarget : "-"}`,
+      value: <><AnimatedNumber value={weekDone} />/{weekTarget > 0 ? weekTarget : "-"}</>,
       icon: <CalendarCheck size={18} style={{ color: "var(--accent-primary)" }} />,
       color: "var(--accent-primary)",
     },
     {
       label: "本月完成",
-      value: `${monthDone}/${monthTarget > 0 ? monthTarget : "-"}`,
+      value: <><AnimatedNumber value={monthDone} />/{monthTarget > 0 ? monthTarget : "-"}</>,
       icon: <BarChart3 size={18} style={{ color: "var(--accent-secondary)" }} />,
       color: "var(--accent-secondary)",
     },

@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { X, Flame, Target, Calendar, Loader2 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { checkInAPI } from "@/api/checkin";
+import gsap from "gsap";
 import type { Habit } from "@/types/entities";
 
 interface HabitDetailPanelProps {
@@ -21,6 +23,31 @@ const FREQ_LABELS: Record<string, string> = {
  * 展示习惯的完整信息：基本信息、打卡记录列表、统计数据。
  */
 export function HabitDetailPanel({ habit, onClose }: HabitDetailPanelProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  
+  // 入场动画
+  useEffect(() => {
+    if (!overlayRef.current || !panelRef.current) return;
+    
+    const tl = gsap.timeline();
+    tl.fromTo(
+      overlayRef.current,
+      { opacity: 0 },
+      { opacity: 1, duration: 0.2, ease: 'power2.out' }
+    ).fromTo(
+      panelRef.current,
+      { scale: 0.8, opacity: 0 },
+      {
+        scale: 1,
+        opacity: 1,
+        duration: 0.3,
+        ease: 'back.out(1.7)',
+      },
+      '-=0.1'
+    );
+  }, []);
+  
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["habit", "stats", habit.id],
     queryFn: () => checkInAPI.getStats(habit.id),
@@ -54,11 +81,13 @@ export function HabitDetailPanel({ habit, onClose }: HabitDetailPanelProps) {
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={onClose}
     >
       <GlassCard
+        ref={panelRef}
         interactive={false}
         className="relative w-full max-w-lg max-h-[80vh] overflow-y-auto !p-6"
         onClick={(e) => e.stopPropagation()}

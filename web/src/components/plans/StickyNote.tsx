@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { Pin, PinOff, Trash } from "lucide-react";
+import gsap from "gsap";
 import type { Todo } from "../../types/entities";
 
 interface StickyNoteProps {
@@ -7,6 +8,7 @@ interface StickyNoteProps {
   onPositionChange: (id: string, x: number, y: number) => void;
   onToggle: (id: string) => void;
   onEdit: (todo: Todo) => void;
+  onDelete: (id: string) => void;
 }
 
 const priorityColors: Record<string, string> = {
@@ -27,41 +29,199 @@ const priorityDarker: Record<string, string> = {
   low: "#93c5fd",
 };
 
-export function StickyNote({ todo, onPositionChange, onToggle, onEdit }: StickyNoteProps) {
+export function StickyNote({ todo, onPositionChange, onToggle, onEdit, onDelete }: StickyNoteProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isCompleting, setIsCompleting] = useState(false);
+  const [pinned, setPinned] = useState(false);
   const initialRotation = useRef(Math.random() * 6 - 3);
-  const noteSize = useRef(192); // w-48 = 192px
+  const noteRef = useRef<HTMLDivElement>(null);
+  const paperRef = useRef<HTMLDivElement>(null);
+  
+  // 根据文字长度计算便利贴宽度
+  const noteWidth = useMemo(() => {
+    const textLen = todo.text.length;
+    const hasDueDate = !!todo.due_date;
+    const baseWidth = 160 + Math.min(textLen, 50) * 3;
+    const dueDateExtra = hasDueDate ? 16 : 0;
+    return Math.min(Math.max(baseWidth + dueDateExtra, 160), 320);
+  }, [todo.text, todo.due_date]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // 拖拽偏移记录
+  const dragOffset = useRef({ x: 0, y: 0 });
+
+  // 拖拽：直接更新 left/top，不依赖 GSAP transform
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("input, button")) return;
+    if (!noteRef.current || pinned) return;
+    
+    e.preventDefault();
     setIsDragging(true);
-    setDragOffset({
+    
+    // GSAP 视觉：微微抬起
+    gsap.to(noteRef.current, {
+      scale: 1.03,
+      boxShadow: "6px 6px 24px rgba(0,0,0,0.2)",
+      duration: 0.15,
+      ease: "power2.out",
+    });
+    
+    dragOffset.current = {
       x: e.clientX - todo.position_x,
       y: e.clientY - todo.position_y,
+    };
+    
+    // Z 轴提升
+    document.querySelectorAll("[data-sticky-note]").forEach(el => {
+      (el as HTMLElement).style.zIndex = "1";
     });
-  };
+    noteRef.current.style.zIndex = "100";
+  }, [todo.position_x, todo.position_y, pinned]);
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
-    const newX = e.clientX - dragOffset.x;
-    const newY = e.clientY - dragOffset.y;
-    onPositionChange(todo.id, newX, newY);
-  };
+    
+    // 计算新位置
+    const rawX = e.clientX - dragOffset.current.x;
+    const rawY = e.clientY - dragOffset.current.y;
+    
+    // 限制在视口内
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    const clampedX = Math.max(0, Math.min(rawX, viewportW - noteWidth));
+    const clampedY = Math.max(0, Math.min(rawY, viewportH - 80));
+    
+    // 直接保存新位置（触发 React Query 乐观更新）
+    onPositionChange(todo.id, Math.round(clampedX), Math.round(clampedY));
+  }, [isDragging, noteWidth, todo.id, onPositionChange]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+    if (!noteRef.current) return;
+    
+    // GSAP 恢复视觉样式
+    gsap.to(noteRef.current, {
+      scale: 1,
+      boxShadow: "none",
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  }, []);
+
+  // hover 效果：GSAP 处理
+  const handleMouseEnter = useCallback(() => {
+    if (isDragging) return;
+    if (!paperRef.current) return;
+    gsap.to(paperRef.current, {
+      scale: 1.05,
+      rotate: initialRotation.current * 0.5,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  }, [isDragging]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (isDragging) return;
+    if (!paperRef.current) return;
+    gsap.to(paperRef.current, {
+      scale: 1,
+      rotate: 0,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  }, [isDragging]);
 
   const handleToggle = () => {
     if (todo.done) {
       onToggle(todo.id);
     } else {
-      setIsCompleting(true);
-      setTimeout(() => {
-        onToggle(todo.id);
-      }, 1000); // 延长到1秒看揉皱效果
+      if (noteRef.current) {
+        const note = noteRef.current;
+        const trashX = window.innerWidth - 110;
+        const trashY = window.innerHeight - 110;
+        const deltaX = trashX - todo.position_x;
+        const deltaY = trashY - todo.position_y;
+        
+        // 清除残留动画
+        gsap.killTweensOf(note);
+        
+        const tl = gsap.timeline({
+          onComplete: () => {
+            onToggle(todo.id);
+          }
+        });
+        
+        // 1. 预感 - 纸片轻轻一颤 (0-0.12s)
+        tl.to(note, {
+          scale: 1.08,
+          rotate: `-=${5}`,
+          duration: 0.08,
+          ease: 'power2.out',
+        });
+        
+        // 2. 尖叫回缩 - 快速缩小 + 3D翻转 (0.12-0.35s)
+        tl.to(note, {
+          scale: 0.6,
+          scaleX: 0.65,
+          scaleY: 0.55,
+          rotate: `+=${180 + Math.random() * 90}`,
+          rotateY: 180,
+          rotateX: 120,
+          borderRadius: '1rem',
+          duration: 0.23,
+          ease: 'back.in(2)',
+        });
+        
+        // 3. 漩涡吸入 - 一边旋转一边被吸到垃圾桶 (0.35-0.85s)
+        // X轴：被吸入垃圾桶
+        tl.to(note, {
+          x: deltaX,
+          duration: 0.5,
+          ease: 'power4.in',
+        }, 0.35);
+        
+        // Y轴：轻微上抛后快速下坠
+        tl.to(note, {
+          y: -60,
+          duration: 0.15,
+          ease: 'power1.out',
+        }, 0.35);
+        
+        tl.to(note, {
+          y: deltaY + 20, // 略微超过垃圾桶（被吸过头）
+          duration: 0.35,
+          ease: 'power3.in',
+        }, 0.5);
+        
+        // 高速旋转（像被漩涡卷进去）
+        tl.to(note, {
+          rotate: `+=${720 + Math.random() * 360}`,
+          rotateY: 360,
+          rotateX: 360,
+          duration: 0.5,
+          ease: 'power1.in',
+        }, 0.35);
+        
+        // 继续缩小成一点
+        tl.to(note, {
+          scale: 0.15,
+          scaleX: 0.2,
+          scaleY: 0.1,
+          borderRadius: '50%',
+          duration: 0.5,
+          ease: 'power3.in',
+        }, 0.35);
+        
+        // 4. 最后弹跳消失 (0.85-1.0s)
+        tl.to(note, {
+          scale: 0.01,
+          opacity: 0,
+          duration: 0.15,
+          ease: 'power2.in',
+        });
+      } else {
+        setTimeout(() => {
+          onToggle(todo.id);
+        }, 1000);
+      }
     }
   };
 
@@ -74,68 +234,42 @@ export function StickyNote({ todo, onPositionChange, onToggle, onEdit }: StickyN
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }
-  }, [isDragging]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // 计算飞向垃圾桶的目标（右下角）
-  const trashX = window.innerWidth - 110;
-  const trashY = window.innerHeight - 110;
+  // 组件卸载时清除 GSAP 动画
+  useEffect(() => {
+    // 设置初始旋转角度
+    if (noteRef.current) {
+      gsap.set(noteRef.current, { rotate: initialRotation.current });
+    }
+    
+    return () => {
+      if (noteRef.current) {
+        gsap.killTweensOf(noteRef.current);
+      }
+    };
+  }, []);
 
   return (
-    <motion.div
-      className="absolute cursor-move"
+    <div
+      ref={noteRef}
+      data-sticky-note
+      className={`absolute select-none ${pinned ? "cursor-default" : "cursor-move"}`}
       style={{
         left: `${todo.position_x}px`,
         top: `${todo.position_y}px`,
-        width: `${noteSize.current}px`,
-        height: `${noteSize.current}px`,
+        width: `${noteWidth}px`,
         perspective: "800px",
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={() => onEdit(todo)}
-      animate={isCompleting ? "completing" : "normal"}
-      exit="exit"
-      variants={{
-        normal: {
-          x: 0,
-          y: 0,
-          scale: 1,
-          opacity: 1,
-          rotate: initialRotation.current,
-          filter: "brightness(1)",
-          transition: { duration: 0.3 },
-        },
-        completing: {
-          // 阶段1 (0-30%): 快速揉皱 - 纸张被捏成团
-          // 阶段2 (30-60%): 揉成纸团，随机滚动
-          // 阶段3 (60-90%): 纸团飞向垃圾桶
-          // 阶段4 (90-100%): 落入垃圾桶，弹跳
-          x: [0, 0, 0, trashX - todo.position_x],
-          y: [0, 0, -40, trashY - todo.position_y],
-          scale: [1, 0.85, 0.5, 0.3],
-          scaleX: [1, 1.1, 0.7, 0.35],
-          scaleY: [1, 0.9, 0.6, 0.25],
-          rotate: [initialRotation.current, initialRotation.current + 45, initialRotation.current + 360, initialRotation.current + 720],
-          rotateY: [0, 0, 180, 360],
-          rotateX: [0, 0, 90, 180],
-          boxShadow: [
-            `3px 3px 12px ${priorityShadows[todo.priority]}, 1px 1px 0 ${priorityDarker[todo.priority]}`,
-            `2px 2px 8px ${priorityShadows[todo.priority]}, 0.5px 0.5px 0 ${priorityDarker[todo.priority]}`,
-            `1px 1px 4px ${priorityShadows[todo.priority]}`,
-            `0px 0px 2px ${priorityShadows[todo.priority]}`,
-          ],
-          opacity: [1, 1, 0.9, 0],
-          filter: ["brightness(1)", "brightness(0.95)", "brightness(0.85)", "brightness(0.75)"],
-          transition: {
-            duration: 1,
-            times: [0, 0.3, 0.6, 1],
-            ease: "easeInOut",
-          },
-        },
-      }}
     >
       {/* 纸张本身，带纹理和阴影 */}
-      <motion.div
-        className="w-full h-full p-4 rounded-lg flex flex-col"
+      <div
+        ref={paperRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="w-full p-4 rounded-lg flex flex-col select-none"
         style={{
           backgroundColor: priorityColors[todo.priority],
           backgroundImage: `
@@ -144,21 +278,39 @@ export function StickyNote({ todo, onPositionChange, onToggle, onEdit }: StickyN
           `,
           boxShadow: `3px 3px 12px ${priorityShadows[todo.priority]}, 1px 1px 0 ${priorityDarker[todo.priority]}`,
         }}
-        whileHover={{ scale: 1.05, rotate: initialRotation.current * 0.5 }}
-        animate={isCompleting ? {
-          borderRadius: ["0.5rem", "0.75rem", "1rem", "1.5rem"],
-          transition: { duration: 1, times: [0, 0.3, 0.6, 1] },
-        } : {}}
       >
-        {/* 图钉/胶带装饰 */}
-        <div
-          className="absolute -top-2 -left-1 w-6 h-4 rounded-full opacity-60"
-          style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.3))",
-            border: "1px solid rgba(0,0,0,0.1)",
-            transform: `rotate(${-initialRotation.current * 2}deg)`,
+        {/* 钉住按钮 - 取代气泡装饰 */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setPinned(!pinned);
           }}
-        />
+          className="absolute -top-2.5 left-1 rounded-full transition-all hover:scale-110 active:scale-90 z-10"
+          style={{
+            color: pinned ? "var(--accent-primary)" : "rgba(0,0,0,0.3)",
+            opacity: pinned ? 1 : 0.6,
+            filter: pinned ? "drop-shadow(0 0 3px rgba(59,130,246,0.5))" : "none",
+          }}
+          title={pinned ? "取消钉住（可拖动）" : "钉住（禁止拖动）"}
+        >
+          {pinned ? <Pin size={20} /> : <PinOff size={18} />}
+        </button>
+
+        {/* 删除按钮 */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(todo.id);
+          }}
+          className="absolute -top-2 right-1 rounded-full p-1 transition-all hover:scale-110 active:scale-90 hover:bg-red-100 z-10"
+          style={{
+            color: "rgba(239,68,68,0.5)",
+            opacity: 0.5,
+          }}
+          title="删除待办"
+        >
+          <Trash size={16} />
+        </button>
 
         <div className="flex items-start gap-2 mb-2 flex-1">
           <input
@@ -177,7 +329,7 @@ export function StickyNote({ todo, onPositionChange, onToggle, onEdit }: StickyN
             📅 {todo.due_date}
           </div>
         )}
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }

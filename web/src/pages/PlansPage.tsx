@@ -5,11 +5,13 @@ import { StickyWall } from "../components/plans/StickyWall";
 import { TrashBin } from "../components/plans/TrashBin";
 import { CompletedDrawer } from "../components/plans/CompletedDrawer";
 import type { Todo } from "../types/entities";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
 export default function PlansPage() {
   const [newTodoText, setNewTodoText] = useState("");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Todo | null>(null);
   const queryClient = useQueryClient();
 
   const { data: todos = [], isLoading } = useQuery({
@@ -40,6 +42,13 @@ export default function PlansPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: todoAPI.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plans", "todos"] });
+    },
+  });
+
   const handleCreate = (priority: "high" | "medium" | "low") => {
     if (!newTodoText.trim()) return;
     createMutation.mutate({
@@ -53,6 +62,17 @@ export default function PlansPage() {
 
   const handleToggle = (id: string) => {
     toggleMutation.mutate(id);
+  };
+
+  const handleDelete = (id: string) => {
+    const target = todos.find((t) => t.id === id);
+    if (target) setDeleteTarget(target);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteMutation.mutate(deleteTarget.id);
+    setDeleteTarget(null);
   };
 
   const handleEdit = (todo: Todo) => {
@@ -119,7 +139,7 @@ export default function PlansPage() {
       </div>
 
       {/* 便利贴墙 */}
-      <StickyWall todos={regularTodos} onToggle={handleToggle} onEdit={handleEdit} />
+      <StickyWall todos={regularTodos} onToggle={handleToggle} onEdit={handleEdit} onDelete={handleDelete} />
 
       {/* 编辑对话框 */}
       {editingTodo && (
@@ -162,6 +182,18 @@ export default function PlansPage() {
         completedTodos={completedTodos}
         onClose={() => setIsDrawerOpen(false)}
         onRestore={handleRestore}
+      />
+      
+      {/* 删除确认弹框 */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="删除待办"
+        message={`确定要删除「${deleteTarget?.text || ""}」吗？此操作不可恢复。`}
+        confirmLabel="删除"
+        cancelLabel="取消"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );

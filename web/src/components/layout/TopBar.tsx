@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Search, Settings, Sun, Moon, BookOpen, RefreshCw, Home, LayoutDashboard } from "lucide-react";
+import { Search, Settings, Sun, Moon, BookOpen, RefreshCw, Home, LayoutDashboard, Command } from "lucide-react";
 import { poetryAPI } from "@/api/poetry";
+import { CommandPalette } from "@/components/ui/CommandPalette";
+import { ServiceShelf } from "@/components/layout/ServiceShelf";
 
 /**
  * TopBar — 顶部栏
@@ -37,6 +39,29 @@ export function TopBar({ theme, onToggleTheme, onSettingsClick }: TopBarProps) {
   const navigate = useNavigate();
   const now = useNow();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // ── 全局快捷键：/ 或 Cmd+K 打开命令面板 ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // 如果焦点在输入框中，不拦截
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+      // 按 / 打开
+      if (e.key === "/" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setPaletteOpen(true);
+      }
+      // Cmd+K / Ctrl+K 切换
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
   const ss = String(now.getSeconds()).padStart(2, "0");
@@ -52,12 +77,13 @@ export function TopBar({ theme, onToggleTheme, onSettingsClick }: TopBarProps) {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center gap-4 px-6 py-3 backdrop-blur-xl"
+      className="sticky top-0 z-30 flex flex-col backdrop-blur-xl"
       style={{
         background: "color-mix(in srgb, var(--bg-primary) 70%, transparent)",
-        borderBottom: "1px solid var(--border-card)",
       }}
     >
+      {/* 第一行：Logo + 搜索 + 右侧工具栏 */}
+      <div className="flex items-center gap-4 px-6 py-3" style={{ borderBottom: "1px solid var(--border-card)" }}>
       {/* Logo */}
       <button
         onClick={() => navigate("/")}
@@ -70,24 +96,39 @@ export function TopBar({ theme, onToggleTheme, onSettingsClick }: TopBarProps) {
         </span>
       </button>
 
-      {/* 搜索框 */}
-      <div className="relative ml-2 hidden flex-1 max-w-md md:block">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
-          size={15}
-          style={{ color: "var(--text-muted)" }}
-        />
-        <input
-          type="text"
-          placeholder="搜索服务、书签、文章…"
-          className="w-full rounded-lg py-1.5 pl-9 pr-3 text-sm outline-none transition"
-          style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-card)",
-            color: "var(--text-primary)",
-          }}
-        />
-      </div>
+      {/* 命令面板触发的搜索框 */}
+      <button
+        onClick={() => setPaletteOpen(true)}
+        className="relative ml-2 hidden flex-1 max-w-md cursor-text md:block group"
+      >
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+            size={15}
+            style={{ color: "var(--text-muted)" }}
+          />
+          <div
+            className="w-full rounded-lg py-1.5 pl-9 pr-12 text-sm text-left transition"
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-card)",
+              color: "var(--text-muted)",
+            }}
+          >
+            搜索页面、服务、书签…
+          </div>
+          <kbd
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] font-mono transition"
+            style={{
+              background: "var(--bg-primary)",
+              color: "var(--text-muted)",
+              border: "1px solid var(--border-card)",
+            }}
+          >
+            <Command size={10} />K
+          </kbd>
+        </div>
+      </button>
 
       <div className="ml-auto flex items-center gap-3 text-sm">
         {/* 时间 + 古诗 + 问候 */}
@@ -145,6 +186,16 @@ export function TopBar({ theme, onToggleTheme, onSettingsClick }: TopBarProps) {
           </span>
         </div>
 
+        {/* 快捷触发按钮（移动端/紧凑模式） */}
+        <button
+          onClick={() => setPaletteOpen(true)}
+          className="btn-ghost md:hidden"
+          aria-label="搜索"
+          title="搜索 (/)  "
+        >
+          <Search size={16} />
+        </button>
+
         {/* 主题切换 */}
         <button
           onClick={onToggleTheme}
@@ -191,6 +242,13 @@ export function TopBar({ theme, onToggleTheme, onSettingsClick }: TopBarProps) {
           )}
         </div>
       </div>
+      </div>{/* end first row */}
+
+      {/* 命令面板 */}
+      <CommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} />
+
+      {/* 服务快捷架 — 第二行，始终可见 */}
+      <ServiceShelf />
     </header>
   );
 }

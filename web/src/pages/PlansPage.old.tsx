@@ -122,8 +122,9 @@ export function PlansPage() {
     queryFn: () => todoAPI.listCompletedDates(`${calendarYear}-${String(calendarMonth).padStart(2, "0")}`),
   });
   const selectedDates = useMemo(() => {
-    if (selectedHabitId) return calendarData[selectedHabitId] ?? [];
-    return [...new Set(Object.values(calendarData).flat())];
+    if (selectedHabitId) return Object.keys(calendarData[selectedHabitId] ?? {});
+    // 全部模式：合并所有习惯的已打卡日期
+    return [...new Set(Object.values(calendarData).flatMap((m) => Object.keys(m)))];
   }, [calendarData, selectedHabitId]);
 
   // 聚合统计
@@ -239,8 +240,8 @@ export function PlansPage() {
   const handleDateClick = useCallback(
     (date: string) => {
       if (!selectedHabitId) return;
-      const checkedDates = calendarData[selectedHabitId] ?? [];
-      const isChecked = checkedDates.includes(date);
+      const dateStatusMap = calendarData[selectedHabitId] ?? {};
+      const isChecked = date in dateStatusMap;
       if (isChecked) {
         uncheckMut.mutate({ todoId: selectedHabitId, date });
       } else {
@@ -509,7 +510,7 @@ export function PlansPage() {
               />
               {selectedHabitId && (
                 <p className="mt-2 text-center text-xs" style={{ color: "var(--text-muted)" }}>
-                  点击日期可{selectedDates.includes(todayStr) ? "取消打卡" : "补打卡"}（仅限选中的习惯）
+                  点击日期可{selectedDates.indexOf(todayStr) !== -1 ? "取消打卡" : "补打卡"}（仅限选中的习惯）
                 </p>
               )}
             </GlassCard>
